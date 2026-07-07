@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mini Model Harness</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">MH</div>
+          <div>
+            <h1>Mini Harness</h1>
+            <p>1B-3B local model lab</p>
+          </div>
+        </div>
+        <nav class="nav" aria-label="Main">
+          <button class="nav-item active" data-page="control">控制台</button>
+          <button class="nav-item" data-page="lab">Prompt Lab</button>
+          <button class="nav-item" data-page="swarm">Swarm</button>
+          <button class="nav-item" data-page="eval">Eval</button>
+          <button class="nav-item" data-page="runs">Runs</button>
+        </nav>
+        <div class="sidebar-footer">
+          <span class="status-dot" id="serverDot"></span>
+          <span id="serverStatus">checking server</span>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Local small-model harness</p>
+            <h2 id="pageTitle">控制台</h2>
+          </div>
+          <div class="topbar-actions">
+            <button class="ghost-button" id="refreshRunsBtn" title="刷新运行记录">刷新</button>
+            <button class="primary-button" id="quickHealthBtn" title="检查当前本地模型端点">端点检查</button>
+          </div>
+        </header>
+
+        <section class="page active" id="page-control">
+          <div class="layout two-col">
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <h3>模型端点</h3>
+                  <p>本地代理会转发到 Ollama、LM Studio、llama.cpp 或 OpenAI-compatible 服务。</p>
+                </div>
+                <span class="badge" id="profileBadge">未连接</span>
+              </div>
+              <div class="form-grid">
+                <label>
+                  Provider
+                  <select id="providerInput">
+                    <option value="ollama">Ollama</option>
+                    <option value="lmstudio">LM Studio</option>
+                    <option value="llamacpp">llama.cpp server</option>
+                    <option value="openai">OpenAI-compatible</option>
+                    <option value="vllm">vLLM compatible</option>
+                  </select>
+                </label>
+                <label>
+                  Base URL
+                  <input id="baseUrlInput" type="url" spellcheck="false" />
+                </label>
+                <label>
+                  Model
+                  <input id="modelInput" list="modelList" spellcheck="false" placeholder="qwen2.5:1.5b" />
+                  <datalist id="modelList"></datalist>
+                </label>
+                <label>
+                  API Key
+                  <input id="apiKeyInput" type="password" spellcheck="false" placeholder="可选" />
+                </label>
+              </div>
+              <div class="button-row">
+                <button class="primary-button" id="loadModelsBtn">读取模型</button>
+                <button class="ghost-button" id="saveProfileBtn">保存配置</button>
+              </div>
+              <div class="model-list" id="modelsOutput"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <h3>小模型默认约束</h3>
+                  <p>默认偏保守，适合 1B-3B 模型减少跑偏和上下文浪费。</p>
+                </div>
+              </div>
+              <div class="range-grid">
+                <label>
+                  Temperature
+                  <input id="temperatureInput" type="range" min="0" max="1.5" step="0.05" />
+                  <output id="temperatureValue"></output>
+                </label>
+                <label>
+                  Top P
+                  <input id="topPInput" type="range" min="0.1" max="1" step="0.05" />
+                  <output id="topPValue"></output>
+                </label>
+                <label>
+                  Max Tokens
+                  <input id="maxTokensInput" type="number" min="16" max="4096" step="16" />
+                </label>
+                <label>
+                  Context Tokens
+                  <input id="contextTokensInput" type="number" min="512" max="32768" step="512" />
+                </label>
+              </div>
+              <div class="hint-list">
+                <div><strong>Prompt:</strong> 角色短、任务短、输出格式硬约束。</div>
+                <div><strong>Swarm:</strong> 多角色串行比大模型自我反思更稳定，但轮数要少。</div>
+                <div><strong>Eval:</strong> 先用关键词/regex，本地小模型 judge 容易不稳定。</div>
+              </div>
+            </section>
+          </div>
+
+          <section class="panel full">
+            <div class="panel-head">
+              <div>
+                <h3>推荐本地模型档位</h3>
+                <p>这里不绑定具体下载源，GUI 只要求本地服务暴露兼容接口。</p>
+              </div>
+            </div>
+            <div class="matrix">
+              <div class="matrix-row matrix-head">
+                <span>档位</span><span>用途</span><span>运行策略</span><span>风险</span>
+              </div>
+              <div class="matrix-row">
+                <span>1B-1.5B</span><span>分类、抽取、格式转换、轻量 routing</span><span>低温、短输出、强模板</span><span>复杂推理弱</span>
+              </div>
+              <div class="matrix-row">
+                <span>2B-3B</span><span>短问答、代码片段、任务拆解、critic</span><span>2-3 个角色轮转</span><span>长上下文易漂移</span>
+              </div>
+              <div class="matrix-row">
+                <span>多模型</span><span>planner + solver + critic + synthesizer</span><span>每步压缩记忆</span><span>总延迟增加</span>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="page" id="page-lab">
+          <div class="layout two-col wide-left">
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <h3>单模型调教</h3>
+                  <p>用于快速比较系统提示词、参数、输出格式和延迟。</p>
+                </div>
+                <button class="ghost-button" id="loadPromptPresetBtn">填入小模型模板</button>
+              </div>
+              <label class="stacked">
+                System
+                <textarea id="systemPromptInput" rows="5" spellcheck="false"></textarea>
+              </label>
+              <label class="stacked">
+                User
+                <textarea id="userPromptInput" rows="8" spellcheck="false"></textarea>
+              </label>
+              <div class="button-row">
+                <button class="primary-button" id="runPromptBtn">运行</button>
+                <button class="ghost-button" id="clearPromptBtn">清空输出</button>
+              </div>
+            </section>
+
+            <section class="panel output-panel">
+              <div class="panel-head">
+                <div>
+                  <h3>输出</h3>
+                  <p id="promptMeta">等待运行</p>
+                </div>
+              </div>
+              <pre class="output" id="promptOutput"></pre>
+            </section>
+          </div>
+        </section>
+
+        <section class="page" id="page-swarm">
+          <div class="layout two-col wide-left">
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <h3>小模型 Swarm</h3>
+                  <p>用短上下文多角色串行，让 1B-3B 模型承担可控子任务。</p>
+                </div>
+                <span class="badge">serial trace</span>
+              </div>
+              <label class="stacked">
+                Task
+                <textarea id="swarmTaskInput" rows="6" spellcheck="false"></textarea>
+              </label>
+              <div class="form-grid compact">
+                <label>
+                  Rounds
+                  <input id="swarmRoundsInput" type="number" min="1" max="5" step="1" />
+                </label>
+                <label>
+                  Agent memory
+                  <select id="swarmMemoryInput">
+                    <option value="compact">Compact last 10</option>
+                    <option value="minimal">Minimal</option>
+                  </select>
+                </label>
+              </div>
+              <div class="agent-table" id="agentTable"></div>
+              <div class="button-row">
+                <button class="primary-button" id="runSwarmBtn">运行 Swarm</button>
+                <button class="ghost-button" id="resetAgentsBtn">重置角色</button>
+              </div>
+            </section>
+
+            <section class="panel output-panel">
+              <div class="panel-head">
+                <div>
+                  <h3>Swarm Trace</h3>
+                  <p id="swarmMeta">等待运行</p>
+                </div>
+              </div>
+              <div class="trace" id="swarmOutput"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="page" id="page-eval">
+          <div class="layout two-col wide-left">
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <h3>Eval Dataset</h3>
+                  <p>JSON 数组。支持 keywords、regex、exact 三种本地断言。</p>
+                </div>
+                <button class="ghost-button" id="loadEvalPresetBtn">加载样例</button>
+              </div>
+              <label class="stacked">
+                Default System
+                <textarea id="evalSystemInput" rows="3" spellcheck="false"></textarea>
+              </label>
+              <label class="stacked">
+                Cases JSON
+                <textarea id="evalDatasetInput" class="code-input" rows="16" spellcheck="false"></textarea>
+              </label>
+              <div class="button-row">
+                <button class="primary-button" id="runEvalBtn">运行 Eval</button>
+                <button class="ghost-button" id="formatEvalBtn">格式化 JSON</button>
+              </div>
+            </section>
+
+            <section class="panel output-panel">
+              <div class="panel-head">
+                <div>
+                  <h3>Eval Result</h3>
+                  <p id="evalMeta">等待运行</p>
+                </div>
+              </div>
+              <div class="eval-result" id="evalOutput"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="page" id="page-runs">
+          <section class="panel full">
+            <div class="panel-head">
+              <div>
+                <h3>运行记录</h3>
+                <p>保存在本项目的 data/runs.json，最多保留 100 条。</p>
+              </div>
+              <button class="danger-button" id="clearRunsBtn">清空记录</button>
+            </div>
+            <div class="runs-list" id="runsOutput"></div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="/app.js"></script>
+  </body>
+</html>

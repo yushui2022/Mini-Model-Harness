@@ -1,0 +1,4 @@
+node_modules/
+data/runs.json
+.env
+.DS_Store

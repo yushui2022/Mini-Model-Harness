@@ -1,0 +1,15 @@
+{
+  "name": "mini-model-harness",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local harness GUI for tuning and orchestrating 1B-3B models.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "check": "node --check server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
