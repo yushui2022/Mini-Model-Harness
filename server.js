@@ -1,6 +1,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const os = require("os");
 const { URL } = require("url");
 
 const PORT = Number(process.env.PORT || 4173);
@@ -20,7 +21,7 @@ const MIME_TYPES = {
 };
 
 const DEFAULT_TIMEOUT_MS = 120000;
-const MAX_RUNS = 100;
+const MAX_RUNS = 500;
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
 
 function ensureDataFiles() {
@@ -294,11 +295,39 @@ function writeRuns(runs) {
   fs.writeFileSync(RUNS_PATH, `${JSON.stringify(runs.slice(0, MAX_RUNS), null, 2)}\n`, "utf8");
 }
 
+function deviceSnapshot() {
+  const cpus = os.cpus() || [];
+  const memory = process.memoryUsage();
+  return {
+    os: {
+      platform: os.platform(),
+      release: os.release(),
+      arch: os.arch()
+    },
+    cpu: {
+      model: cpus[0]?.model || "unknown",
+      cores: cpus.length || os.availableParallelism?.() || 1
+    },
+    memory: {
+      totalBytes: os.totalmem(),
+      freeBytes: os.freemem(),
+      processRssBytes: memory.rss,
+      processHeapUsedBytes: memory.heapUsed
+    },
+    runtime: {
+      node: process.version,
+      pid: process.pid
+    },
+    capturedAt: new Date().toISOString()
+  };
+}
+
 function appendRun(run) {
   const runs = readRuns();
   const saved = {
     id: `run_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`,
     createdAt: new Date().toISOString(),
+    device: deviceSnapshot(),
     ...run
   };
   runs.unshift(saved);
@@ -334,6 +363,7 @@ async function runSwarm(input) {
   const task = String(input.task || "").trim();
   const rounds = clampInteger(input.rounds, 1, 5, 2);
   const memoryWindow = input.memory === "minimal" ? 3 : 10;
+  const compareBaseline = Boolean(input.compareBaseline);
   const agents = (Array.isArray(input.agents) ? input.agents : [])
     .filter((agent) => agent && agent.enabled !== false)
     .slice(0, 8)
@@ -348,6 +378,24 @@ async function runSwarm(input) {
 
   const trace = [];
   const startedAt = Date.now();
+  let baseline = null;
+
+  if (compareBaseline) {
+    const baselineStarted = Date.now();
+    const result = await chatCompletion({
+      profile,
+      params,
+      messages: [
+        { role: "system", content: "You are a concise single-call baseline for a local small-model harness." },
+        { role: "user", content: task }
+      ]
+    });
+    baseline = {
+      output: result.text,
+      latencyMs: Date.now() - baselineStarted,
+      outputLength: result.text.length
+    };
+  }
 
   for (let round = 1; round <= rounds; round += 1) {
     for (const agent of agents) {
@@ -389,6 +437,13 @@ async function runSwarm(input) {
     ]
   });
 
+  const totalLatencyMs = Date.now() - startedAt;
+  const swarmOnlyLatencyMs = baseline ? totalLatencyMs - baseline.latencyMs : totalLatencyMs;
+  const swarmFailureTags = [];
+  if (baseline && swarmOnlyLatencyMs > baseline.latencyMs * 2) {
+    swarmFailureTags.push("LATENCY_OVERHEAD");
+  }
+
   const run = appendRun({
     type: "swarm",
     title: task.slice(0, 90),
@@ -397,19 +452,31 @@ async function runSwarm(input) {
     summary: {
       agents: agents.map((agent) => agent.name),
       rounds,
-      latencyMs: Date.now() - startedAt
+      latencyMs: totalLatencyMs,
+      swarmOnlyLatencyMs,
+      baselineLatencyMs: baseline?.latencyMs,
+      latencyMultiplier: baseline ? Number((swarmOnlyLatencyMs / Math.max(1, baseline.latencyMs)).toFixed(2)) : undefined,
+      failureTags: swarmFailureTags
     },
     result: {
       final: final.text,
-      trace
+      trace,
+      baseline
     }
   });
 
   return {
     runId: run.id,
     final: final.text,
+    baseline,
+    comparison: {
+      swarmOnlyLatencyMs,
+      baselineLatencyMs: baseline?.latencyMs,
+      latencyMultiplier: baseline ? Number((swarmOnlyLatencyMs / Math.max(1, baseline.latencyMs)).toFixed(2)) : undefined,
+      failureTags: swarmFailureTags
+    },
     trace,
-    latencyMs: Date.now() - startedAt
+    latencyMs: totalLatencyMs
   };
 }
 
@@ -431,42 +498,260 @@ function normalizeCase(testCase, index) {
         .filter(Boolean);
   return {
     id: String(testCase.id || `case_${index + 1}`),
+    family: String(testCase.family || "general"),
     input: String(testCase.input || testCase.prompt || ""),
     system: String(testCase.system || ""),
-    expected: String(expected),
+    expected,
     check: String(testCase.check || testCase.checkType || "keywords"),
     keywords,
-    regex: String(testCase.regex || "")
+    notContains: Array.isArray(testCase.notContains) ? testCase.notContains : [],
+    choices: Array.isArray(testCase.choices) ? testCase.choices : [],
+    regex: String(testCase.regex || ""),
+    schema: testCase.schema || null,
+    min: testCase.min ?? testCase.minimum,
+    max: testCase.max ?? testCase.maximum,
+    maxReasonableChars: testCase.max_reasonable_chars ?? testCase.maxReasonableChars
+  };
+}
+
+function cleanForExact(value) {
+  return String(value).trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function extractJsonCandidate(output) {
+  const text = String(output || "").trim();
+  if (!text) return "";
+  if (text.startsWith("{") || text.startsWith("[")) return text;
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenced) return fenced[1].trim();
+  const objectStart = text.indexOf("{");
+  const objectEnd = text.lastIndexOf("}");
+  if (objectStart >= 0 && objectEnd > objectStart) return text.slice(objectStart, objectEnd + 1);
+  const arrayStart = text.indexOf("[");
+  const arrayEnd = text.lastIndexOf("]");
+  if (arrayStart >= 0 && arrayEnd > arrayStart) return text.slice(arrayStart, arrayEnd + 1);
+  return text;
+}
+
+function parseJsonOutput(output) {
+  const candidate = extractJsonCandidate(output);
+  try {
+    return { ok: true, value: JSON.parse(candidate), candidate };
+  } catch (error) {
+    return { ok: false, value: null, candidate, error: error.message };
+  }
+}
+
+function countRepeatedLines(output) {
+  const lines = String(output || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const counts = new Map();
+  let repeats = 0;
+  for (const line of lines) {
+    const count = (counts.get(line) || 0) + 1;
+    counts.set(line, count);
+    if (count > 1) repeats += 1;
+  }
+  return repeats;
+}
+
+function validateSimpleSchema(value, schema, pathName = "$") {
+  if (!schema || typeof schema !== "object") return [];
+  const errors = [];
+  const type = schema.type;
+  if (type) {
+    const actualType = Array.isArray(value) ? "array" : value === null ? "null" : typeof value;
+    if (actualType !== type) {
+      errors.push(`${pathName} expected ${type}, got ${actualType}`);
+      return errors;
+    }
+  }
+  if (Array.isArray(schema.enum) && !schema.enum.includes(value)) {
+    errors.push(`${pathName} invalid enum value`);
+  }
+  if (schema.type === "object" && value && typeof value === "object" && !Array.isArray(value)) {
+    for (const key of schema.required || []) {
+      if (!Object.prototype.hasOwnProperty.call(value, key)) {
+        errors.push(`${pathName}.${key} is required`);
+      }
+    }
+    const properties = schema.properties || {};
+    for (const [key, childSchema] of Object.entries(properties)) {
+      if (Object.prototype.hasOwnProperty.call(value, key)) {
+        errors.push(...validateSimpleSchema(value[key], childSchema, `${pathName}.${key}`));
+      }
+    }
+    if (schema.additionalProperties === false) {
+      for (const key of Object.keys(value)) {
+        if (!Object.prototype.hasOwnProperty.call(properties, key)) {
+          errors.push(`${pathName}.${key} is not allowed`);
+        }
+      }
+    }
+  }
+  return errors;
+}
+
+function outputDiagnostics(testCase, output, parsed) {
+  const rawLength = String(output || "").length;
+  const repeatedLineCount = countRepeatedLines(output);
+  return {
+    rawLength,
+    jsonParseable: Boolean(parsed?.ok),
+    repeatedLineCount,
+    maxTokenLikelyHit: Boolean(testCase.maxReasonableChars && rawLength > Number(testCase.maxReasonableChars)),
+    jsonTextLeakage: Boolean(parsed?.ok && extractJsonCandidate(output).trim() !== String(output || "").trim())
   };
 }
 
 function scoreCase(testCase, output) {
   const normalizedOutput = output.toLowerCase();
+  const check = testCase.check === "keywords" ? "contains_all" : testCase.check;
+  const parsed = check.startsWith("json") ? parseJsonOutput(output) : null;
+  const diagnostics = outputDiagnostics(testCase, output, parsed);
+  const failureTags = [];
+  const breakdown = { format: 1, content: 1, loop: diagnostics.repeatedLineCount ? 0.6 : 1 };
+
+  if (diagnostics.repeatedLineCount > 0) failureTags.push("LINE_REPEAT");
+  if (diagnostics.maxTokenLikelyHit) failureTags.push("MAX_TOKEN_LIKELY");
+
   if (testCase.check === "regex" && testCase.regex) {
     try {
       const passed = new RegExp(testCase.regex, "i").test(output);
-      return { passed, score: passed ? 1 : 0, reason: `regex: ${testCase.regex}` };
+      if (!passed) failureTags.push("REGEX_MISS");
+      return {
+        passed,
+        score: passed ? 1 : 0,
+        reason: `regex: ${testCase.regex}`,
+        failureTags,
+        scoreBreakdown: { ...breakdown, content: passed ? 1 : 0 },
+        diagnostics
+      };
     } catch (error) {
-      return { passed: false, score: 0, reason: `invalid regex: ${error.message}` };
+      failureTags.push("INVALID_ASSERTION");
+      return {
+        passed: false,
+        score: 0,
+        reason: `invalid regex: ${error.message}`,
+        failureTags,
+        scoreBreakdown: { ...breakdown, content: 0 },
+        diagnostics
+      };
     }
   }
 
   if (testCase.check === "exact") {
-    const clean = (value) => String(value).trim().replace(/\s+/g, " ").toLowerCase();
-    const passed = clean(output) === clean(testCase.expected);
-    return { passed, score: passed ? 1 : 0, reason: "exact match" };
+    const passed = cleanForExact(output) === cleanForExact(testCase.expected);
+    if (!passed) failureTags.push("EXACT_MISMATCH");
+    return {
+      passed,
+      score: passed ? 1 : 0,
+      reason: "exact match",
+      failureTags,
+      scoreBreakdown: { ...breakdown, content: passed ? 1 : 0 },
+      diagnostics
+    };
+  }
+
+  if (check === "enum") {
+    const choices = testCase.choices.length ? testCase.choices : String(testCase.expected).split(",").map((item) => item.trim());
+    const cleanOutput = String(output).trim().replace(/^["']|["']$/g, "");
+    const passed = choices.some((choice) => cleanForExact(cleanOutput) === cleanForExact(choice));
+    if (!passed) failureTags.push("INVALID_ENUM");
+    return {
+      passed,
+      score: passed ? 1 : 0,
+      reason: `enum: ${choices.join(", ")}`,
+      failureTags,
+      scoreBreakdown: { ...breakdown, content: passed ? 1 : 0 },
+      diagnostics
+    };
+  }
+
+  if (check === "json_parse" || check === "json_schema") {
+    if (!parsed.ok) {
+      failureTags.push("JSON_PARSE_ERROR");
+      return {
+        passed: false,
+        score: 0,
+        reason: `json parse: ${parsed.error}`,
+        failureTags,
+        scoreBreakdown: { ...breakdown, format: 0, content: 0 },
+        diagnostics,
+        parsedOutput: null
+      };
+    }
+    const schemaErrors = check === "json_schema" ? validateSimpleSchema(parsed.value, testCase.schema) : [];
+    const passed = schemaErrors.length === 0;
+    if (!passed) failureTags.push("SCHEMA_MISMATCH");
+    if (diagnostics.jsonTextLeakage) failureTags.push("TEXT_LEAKAGE");
+    return {
+      passed,
+      score: passed ? 1 : 0.5,
+      reason: passed ? "json valid" : schemaErrors.join("; "),
+      failureTags,
+      scoreBreakdown: { ...breakdown, format: 1, content: passed ? 1 : 0.5 },
+      diagnostics,
+      parsedOutput: parsed.value
+    };
+  }
+
+  if (check === "numeric_range") {
+    const number = Number(String(output).match(/-?\d+(?:\.\d+)?/)?.[0]);
+    const min = Number(testCase.min);
+    const max = Number(testCase.max);
+    const passed = Number.isFinite(number) && number >= min && number <= max;
+    if (!passed) failureTags.push("NUMERIC_RANGE_FAIL");
+    return {
+      passed,
+      score: passed ? 1 : 0,
+      reason: `numeric range: ${min}..${max}`,
+      failureTags,
+      scoreBreakdown: { ...breakdown, content: passed ? 1 : 0 },
+      diagnostics
+    };
+  }
+
+  if (check === "not_contains") {
+    const banned = testCase.notContains.filter(Boolean);
+    const hits = banned.filter((item) => normalizedOutput.includes(String(item).toLowerCase()));
+    const passed = hits.length === 0;
+    if (!passed) failureTags.push("BANNED_TEXT");
+    return {
+      passed,
+      score: passed ? 1 : 0,
+      reason: `not contains hits: ${hits.length}/${banned.length}`,
+      hits,
+      failureTags,
+      scoreBreakdown: { ...breakdown, content: passed ? 1 : 0 },
+      diagnostics
+    };
   }
 
   const keywords = testCase.keywords.filter(Boolean);
   if (!keywords.length) {
-    return { passed: true, score: 1, reason: "no assertion configured" };
+    return {
+      passed: true,
+      score: 1,
+      reason: "no assertion configured",
+      failureTags,
+      scoreBreakdown: breakdown,
+      diagnostics
+    };
   }
   const hits = keywords.filter((keyword) => normalizedOutput.includes(keyword.toLowerCase()));
+  const passed = check === "contains_any" ? hits.length > 0 : hits.length === keywords.length;
+  if (!passed) failureTags.push(check === "contains_any" ? "KEYWORD_ANY_MISS" : "KEYWORD_MISS");
   return {
-    passed: hits.length === keywords.length,
-    score: hits.length / keywords.length,
+    passed,
+    score: check === "contains_any" ? (hits.length ? 1 : 0) : hits.length / keywords.length,
     reason: `keyword hits: ${hits.length}/${keywords.length}`,
-    hits
+    hits,
+    failureTags,
+    scoreBreakdown: { ...breakdown, content: check === "contains_any" ? (hits.length ? 1 : 0) : hits.length / keywords.length },
+    diagnostics
   };
 }
 
@@ -493,6 +778,8 @@ async function runEval(input) {
     const score = scoreCase(testCase, result.text);
     cases.push({
       id: testCase.id,
+      family: testCase.family,
+      check: testCase.check,
       input: testCase.input,
       expected: testCase.expected,
       output: result.text,
@@ -504,12 +791,19 @@ async function runEval(input) {
   const total = cases.length;
   const passed = cases.filter((item) => item.passed).length;
   const avgScore = total ? cases.reduce((sum, item) => sum + item.score, 0) / total : 0;
+  const failureTagCounts = {};
+  for (const item of cases) {
+    for (const tag of item.failureTags || []) {
+      failureTagCounts[tag] = (failureTagCounts[tag] || 0) + 1;
+    }
+  }
   const summary = {
     total,
     passed,
     failed: total - passed,
     passRate: total ? passed / total : 0,
     avgScore,
+    failureTagCounts,
     latencyMs: Date.now() - startedAt
   };
 
@@ -557,6 +851,121 @@ function serveStatic(req, res, pathname) {
   });
 }
 
+function findRun(runId) {
+  return readRuns().find((run) => run.id === runId);
+}
+
+function sendDownload(res, status, body, contentType, filename) {
+  res.writeHead(status, {
+    "content-type": contentType,
+    "cache-control": "no-store",
+    "content-disposition": `attachment; filename="${filename}"`
+  });
+  res.end(body);
+}
+
+function stringifyExpected(value) {
+  return typeof value === "string" ? value : JSON.stringify(value);
+}
+
+function formatPercent(value) {
+  return `${Math.round(Number(value || 0) * 100)}%`;
+}
+
+function generateMarkdownReport(run) {
+  const summary = run.summary || {};
+  const profile = run.profile || {};
+  const device = run.device || {};
+  const cases = run.result?.cases || [];
+  const failedCases = cases.filter((item) => !item.passed).slice(0, 5);
+  const tags = Object.entries(summary.failureTagCounts || {})
+    .map(([tag, count]) => `- ${tag}: ${count}`)
+    .join("\n") || "- None";
+  const failed = failedCases
+    .map((item) => [
+      `### ${item.id}`,
+      "",
+      `- Passed: ${item.passed ? "yes" : "no"}`,
+      `- Score: ${Math.round(Number(item.score || 0) * 100)}%`,
+      `- Reason: ${item.reason || ""}`,
+      `- Failure tags: ${(item.failureTags || []).join(", ") || "none"}`,
+      "",
+      "Input:",
+      "",
+      "```text",
+      item.input || "",
+      "```",
+      "",
+      "Output:",
+      "",
+      "```text",
+      item.output || "",
+      "```"
+    ].join("\n"))
+    .join("\n\n");
+
+  return [
+    `# Mini Model Harness Report`,
+    "",
+    `Run: ${run.id}`,
+    `Created: ${run.createdAt}`,
+    `Type: ${run.type}`,
+    `Title: ${run.title || ""}`,
+    "",
+    "## Runtime",
+    "",
+    `- Provider: ${profile.provider || ""}`,
+    `- Base URL: ${profile.baseUrl || ""}`,
+    `- Model: ${profile.model || ""}`,
+    "",
+    "## Device",
+    "",
+    `- OS: ${device.os?.platform || ""} ${device.os?.release || ""} ${device.os?.arch || ""}`,
+    `- CPU: ${device.cpu?.model || ""}`,
+    `- Cores: ${device.cpu?.cores || ""}`,
+    `- Memory: ${device.memory?.totalBytes ? Math.round(device.memory.totalBytes / 1024 / 1024 / 1024) : ""} GB total`,
+    `- Node: ${device.runtime?.node || ""}`,
+    "",
+    "## Summary",
+    "",
+    `- Passed: ${summary.passed ?? "n/a"}/${summary.total ?? "n/a"}`,
+    `- Pass rate: ${formatPercent(summary.passRate)}`,
+    `- Average score: ${formatPercent(summary.avgScore)}`,
+    `- Latency: ${summary.latencyMs || 0}ms`,
+    "",
+    "## Failure Tags",
+    "",
+    tags,
+    "",
+    failedCases.length ? "## Failed Cases" : "## Cases",
+    "",
+    failedCases.length ? failed : "No failed cases recorded in this run."
+  ].join("\n");
+}
+
+function csvEscape(value) {
+  const text = stringifyExpected(value ?? "");
+  return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+}
+
+function generateCasesCsv(run) {
+  const rows = [["id", "passed", "score", "latencyMs", "failureTags", "reason", "input", "expected", "output"]];
+  for (const item of run.result?.cases || []) {
+    rows.push([
+      item.id,
+      item.passed,
+      item.score,
+      item.latencyMs,
+      (item.failureTags || []).join("|"),
+      item.reason || "",
+      item.input || "",
+      item.expected ?? "",
+      item.output || ""
+    ]);
+  }
+  return rows.map((row) => row.map(csvEscape).join(",")).join("\n");
+}
+
 async function handleApi(req, res, pathname) {
   try {
     if (req.method === "GET" && pathname === "/api/health") {
@@ -571,6 +980,30 @@ async function handleApi(req, res, pathname) {
           { id: "openai", label: "OpenAI-compatible", defaultBaseUrl: defaultBaseUrl("openai") }
         ]
       });
+      return;
+    }
+
+    if (req.method === "GET" && pathname === "/api/device") {
+      sendJson(res, 200, { device: deviceSnapshot() });
+      return;
+    }
+
+    const exportMatch = pathname.match(/^\/api\/runs\/([^/]+)\/(report\.md|export\.json|export\.csv)$/);
+    if (req.method === "GET" && exportMatch) {
+      const run = findRun(exportMatch[1]);
+      if (!run) {
+        sendJson(res, 404, { error: "Run not found" });
+        return;
+      }
+      if (exportMatch[2] === "report.md") {
+        sendDownload(res, 200, generateMarkdownReport(run), "text/markdown; charset=utf-8", `${run.id}.md`);
+        return;
+      }
+      if (exportMatch[2] === "export.csv") {
+        sendDownload(res, 200, generateCasesCsv(run), "text/csv; charset=utf-8", `${run.id}.csv`);
+        return;
+      }
+      sendDownload(res, 200, `${JSON.stringify(run, null, 2)}\n`, "application/json; charset=utf-8", `${run.id}.json`);
       return;
     }
 

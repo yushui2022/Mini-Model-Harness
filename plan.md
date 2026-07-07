@@ -67,13 +67,10 @@ The project is currently a small Node.js app with a static frontend. It already 
 
 Known current issues:
 
-- Chinese text in `README.md` is mojibake/corrupted; verify `public/index.html` and
-  `public/app.js` during Milestone 0 and fix any remaining corrupted copy.
-- Eval is still a prototype and does not yet prove production usefulness.
-- No compare view.
-- No report export.
-- No device/model matching page.
-- Runs are saved as a small capped JSON array, not a durable experiment store.
+- Chinese text in `README.md`, `public/index.html`, and `public/app.js` is currently clean.
+- Eval has practical assertions, simple exports, and a front-end Compare view.
+- Device page and run-level device snapshots exist in V0.1 form.
+- Runs are still stored in JSON, but the UI now uses searchable summary cards and keeps up to 500 runs.
 
 ## 1. Product Thesis
 
@@ -858,7 +855,7 @@ Work in this order. Each milestone depends on the previous one.
 
 ### Milestone 0: Stabilize The Existing Demo
 
-Status: pending
+Status: complete
 Depends on: none
 Primary files: `README.md`, `public/index.html`, `public/app.js`, `public/styles.css`
 Do not touch: eval architecture, storage migration, stack migration
@@ -886,7 +883,7 @@ Acceptance:
 
 ### Milestone 1: Product Loop V0.2
 
-Status: pending
+Status: complete
 Depends on: Milestone 0
 Primary files: `server.js`, `public/app.js`, `public/index.html`, `public/styles.css`
 Do not touch: storage migration, stack migration, deep benchmark architecture
@@ -922,7 +919,7 @@ Acceptance:
 
 ### Milestone 2: Practical Eval And Simple Export
 
-Status: pending
+Status: complete
 Depends on: Milestone 1
 Primary files: `server.js`, `public/app.js`, `public/index.html`, `README.md`
 Do not touch: compare page, device probing, storage migration, stack migration
@@ -982,7 +979,7 @@ Acceptance:
 
 ### Milestone 3: Compare View
 
-Status: pending
+Status: complete
 Depends on: Milestone 2
 Primary files: `server.js`, `public/app.js`, `public/index.html`, `public/styles.css`
 Do not touch: device probing, storage migration, stack migration
@@ -1026,7 +1023,7 @@ Acceptance:
 
 ### Milestone 4: Device Match V0.1
 
-Status: pending
+Status: complete
 Depends on: Milestone 3
 Primary files: `server.js`, `public/app.js`, `public/index.html`, `README.md`
 Do not touch: storage migration, stack migration, model download management
@@ -1072,7 +1069,7 @@ Acceptance:
 
 ### Milestone 5: Run Storage Hardening
 
-Status: pending
+Status: complete
 Depends on: Milestone 4
 Primary files: `server.js`, `data/`, `public/app.js`, `README.md`
 Do not touch: frontend framework migration, desktop packaging, unrelated UI redesign
@@ -1107,7 +1104,7 @@ Acceptance:
 
 ### Milestone 6: Eval Pack System
 
-Status: pending
+Status: complete
 Depends on: Milestone 5
 Primary files: `server.js`, `public/app.js`, `public/index.html`, `examples/`, `README.md`
 Do not touch: stack migration, model download management, unrelated swarm features
@@ -1144,7 +1141,7 @@ Acceptance:
 
 ### Milestone 7: Swarm Evaluation
 
-Status: pending
+Status: complete
 Depends on: Milestone 6
 Primary files: `server.js`, `public/app.js`, `public/index.html`, `public/styles.css`
 Do not touch: making swarm the primary product narrative, stack migration
@@ -1175,7 +1172,7 @@ Acceptance:
 
 ### Milestone 8: High-End Product UI Pass
 
-Status: pending
+Status: complete
 Depends on: Milestone 7
 Primary files: `public/index.html`, `public/app.js`, `public/styles.css`, `README.md`
 Do not touch: backend storage migration, new runtime integrations, desktop packaging
@@ -1217,7 +1214,7 @@ Acceptance:
 
 ### Milestone 9: Packaging And Public Readiness
 
-Status: pending
+Status: complete
 Depends on: Milestone 8
 Primary files: `README.md`, `examples/`, `docs/`, `package.json`
 Do not touch: unrequested license choice, major stack migration
@@ -1396,3 +1393,50 @@ Update this section after long-running work.
   - Changed Milestone 2 to Practical Eval And Simple Export.
   - Rewrote `README.md` as a clean product-first quick start.
   - Initialized the local directory for `https://github.com/yushui2022/Mini-Model-Harness.git`.
+- Completed Milestone 0 through Milestone 2 in product-first form:
+  - Added Dashboard status strip with runtime, model, latest run, and next action.
+  - Added built-in scenario cards for JSON extraction, intent routing, loop stress, and safety boundary.
+  - Scenario loading now fills Prompt, Eval, and Swarm surfaces together.
+  - Added run summary cards for Prompt and Eval.
+  - Extended Eval with practical checks: `contains_all`, `contains_any`, `not_contains`, `enum`, `json_parse`, `json_schema`, and `numeric_range`.
+  - Added diagnostics and failure tags for common failures.
+  - Added Markdown, JSON, and CSV export endpoints and UI links.
+  - Smoke checked server health, page load, JS-rendered Dashboard scenarios, syntax checks, and export endpoints.
+- Completed Milestone 3:
+  - Added Compare navigation and page.
+  - Compare reads existing eval runs from `/api/runs`.
+  - Shows pass, score, latency, case-change deltas, fixed cases, regressed cases, failure tag deltas, and side-by-side changed outputs.
+  - Current next milestone: **Milestone 4: Device Match V0.1**.
+- Completed Milestone 4:
+  - Added `/api/device`.
+  - Added device snapshots to saved runs.
+  - Added Device page with OS, CPU, memory, Node runtime, and a simple fit hint.
+  - Added device summary to Markdown reports.
+  - Current next milestone: **Milestone 5: Run Storage Hardening**.
+- Completed Milestone 5 in lightweight form:
+  - Increased run retention from 100 to 500.
+  - Added Runs search and type filtering.
+  - Replaced default raw JSON rendering with compact summary cards.
+  - Kept Markdown, JSON, and CSV export links as the raw data path.
+  - Current next milestone: **Milestone 6: Eval Pack System**.
+- Completed Milestone 6:
+  - Added example eval packs under `examples/eval-packs/`.
+  - Added Eval screen import/export pack controls.
+  - Documented eval pack format and examples in `README.md`.
+  - Current next milestone: **Milestone 7: Swarm Evaluation**.
+- Completed Milestone 7:
+  - Added optional single-call baseline for Swarm runs.
+  - Recorded baseline latency, swarm-only latency, latency multiplier, and `LATENCY_OVERHEAD` flag.
+  - Displayed baseline output and swarm-vs-baseline summary in the Swarm result panel.
+  - Current next milestone: **Milestone 8: High-End Product UI Pass**.
+- Completed Milestone 8 in product-first form:
+  - Reordered navigation around Dashboard, Prompt, Eval, Compare, Device, Swarm, Runs, and Reports.
+  - Added Failure Hotspot to the Dashboard status strip.
+  - Added Reports page for Markdown, JSON, and CSV export entry points.
+  - Kept the interface dense and workbench-oriented rather than landing-page styled.
+  - Current next milestone: **Milestone 9: Packaging And Public Readiness**.
+- Completed Milestone 9:
+  - Expanded `README.md` with screens, eval packs, smoke test, roadmap, and limitations.
+  - Added `examples/reports/sample-report.md`.
+  - Verified static checks, page resources, device endpoint, export endpoints, UTF-8 text, and eval pack parsing.
+  - All roadmap milestones in this plan are now complete in the product-first MVP scope.

@@ -1,0 +1,25 @@
+{
+  "name": "Loop Guard Gate",
+  "version": "0.1.0",
+  "description": "Checks short-output compliance and obvious runaway responses.",
+  "taskProfile": "loop_guard",
+  "recommendedModelSize": "1B-3B",
+  "system": "Return the shortest valid answer. Do not repeat yourself.",
+  "cases": [
+    {
+      "id": "loop_short_json_001",
+      "family": "loop_detection",
+      "input": "只输出一个 JSON 对象，不要解释。字段为 label，值为 ok。",
+      "check": "json_schema",
+      "schema": {
+        "type": "object",
+        "required": ["label"],
+        "properties": {
+          "label": { "type": "string", "enum": ["ok"] }
+        },
+        "additionalProperties": false
+      },
+      "maxReasonableChars": 80
+    }
+  ]
+}

@@ -17,11 +17,14 @@
           </div>
         </div>
         <nav class="nav" aria-label="Main">
-          <button class="nav-item active" data-page="control">控制台</button>
-          <button class="nav-item" data-page="lab">Prompt Lab</button>
-          <button class="nav-item" data-page="swarm">Swarm</button>
+          <button class="nav-item active" data-page="control">Dashboard</button>
+          <button class="nav-item" data-page="lab">Prompt</button>
           <button class="nav-item" data-page="eval">Eval</button>
+          <button class="nav-item" data-page="compare">Compare</button>
+          <button class="nav-item" data-page="device">Device</button>
+          <button class="nav-item" data-page="swarm">Swarm</button>
           <button class="nav-item" data-page="runs">Runs</button>
+          <button class="nav-item" data-page="reports">Reports</button>
         </nav>
         <div class="sidebar-footer">
           <span class="status-dot" id="serverDot"></span>
@@ -33,7 +36,8 @@
         <header class="topbar">
           <div>
             <p class="eyebrow">Local small-model harness</p>
-            <h2 id="pageTitle">控制台</h2>
+            <h2 id="pageTitle">Dashboard</h2>
+            <p class="topbar-subtitle" id="profileLine">Ollama · no model selected</p>
           </div>
           <div class="topbar-actions">
             <button class="ghost-button" id="refreshRunsBtn" title="刷新运行记录">刷新</button>
@@ -42,6 +46,40 @@
         </header>
 
         <section class="page active" id="page-control">
+          <section class="dashboard-strip" aria-label="Harness status">
+            <div class="status-tile">
+              <span>Runtime</span>
+              <strong id="runtimeTile">Ollama</strong>
+            </div>
+            <div class="status-tile">
+              <span>Model</span>
+              <strong id="modelTile">Not selected</strong>
+            </div>
+            <div class="status-tile">
+              <span>Latest Eval</span>
+              <strong id="latestRunTile">No runs yet</strong>
+            </div>
+            <div class="status-tile warn-tile">
+              <span>Failure Hotspot</span>
+              <strong id="failureHotspotTile">None</strong>
+            </div>
+            <div class="status-tile action">
+              <span>Next Action</span>
+              <strong id="nextActionTile">Load models</strong>
+            </div>
+          </section>
+
+          <section class="panel full scenario-panel">
+            <div class="panel-head">
+              <div>
+                <h3>内置场景</h3>
+                <p>先别从空白开始。选择一个小模型常见任务，直接加载到 Prompt 和 Eval。</p>
+              </div>
+              <span class="badge">product loop</span>
+            </div>
+            <div class="scenario-grid" id="scenarioGrid"></div>
+          </section>
+
           <div class="layout two-col">
             <section class="panel">
               <div class="panel-head">
@@ -173,6 +211,10 @@
                   <p id="promptMeta">等待运行</p>
                 </div>
               </div>
+              <div class="summary-card" id="promptSummary">
+                <span>Ready</span>
+                <strong>选择场景或直接运行 prompt。</strong>
+              </div>
               <pre class="output" id="promptOutput"></pre>
             </section>
           </div>
@@ -205,6 +247,10 @@
                   </select>
                 </label>
               </div>
+              <label class="inline-check">
+                <input id="swarmBaselineInput" type="checkbox" />
+                Compare with single-call baseline
+              </label>
               <div class="agent-table" id="agentTable"></div>
               <div class="button-row">
                 <button class="primary-button" id="runSwarmBtn">运行 Swarm</button>
@@ -232,7 +278,12 @@
                   <h3>Eval Dataset</h3>
                   <p>JSON 数组。支持 keywords、regex、exact 三种本地断言。</p>
                 </div>
-                <button class="ghost-button" id="loadEvalPresetBtn">加载样例</button>
+                <div class="button-row">
+                  <button class="ghost-button" id="loadEvalPresetBtn">加载样例</button>
+                  <button class="ghost-button" id="importEvalPackBtn">导入 Pack</button>
+                  <button class="ghost-button" id="exportEvalPackBtn">导出 Pack</button>
+                  <input id="evalPackFileInput" type="file" accept="application/json,.json" hidden />
+                </div>
               </div>
               <label class="stacked">
                 Default System
@@ -255,6 +306,10 @@
                   <p id="evalMeta">等待运行</p>
                 </div>
               </div>
+              <div class="summary-card" id="evalSummary">
+                <span>Ready</span>
+                <strong>加载场景后运行 Eval。</strong>
+              </div>
               <div class="eval-result" id="evalOutput"></div>
             </section>
           </div>
@@ -265,11 +320,93 @@
             <div class="panel-head">
               <div>
                 <h3>运行记录</h3>
-                <p>保存在本项目的 data/runs.json，最多保留 100 条。</p>
+                <p>保存在本项目的 data/runs.json，最多保留 500 条。原始数据用导出查看。</p>
               </div>
               <button class="danger-button" id="clearRunsBtn">清空记录</button>
             </div>
+            <div class="form-grid compact runs-toolbar">
+              <label>
+                Search
+                <input id="runsSearchInput" type="search" placeholder="model, title, tag, run id" />
+              </label>
+              <label>
+                Type
+                <select id="runsTypeInput">
+                  <option value="all">All</option>
+                  <option value="chat">Chat</option>
+                  <option value="eval">Eval</option>
+                  <option value="swarm">Swarm</option>
+                </select>
+              </label>
+            </div>
             <div class="runs-list" id="runsOutput"></div>
+          </section>
+        </section>
+
+        <section class="page" id="page-compare">
+          <section class="panel full">
+            <div class="panel-head">
+              <div>
+                <h3>Compare Eval Runs</h3>
+                <p>选择两次 Eval 运行，查看通过率、延迟、失败标签和 case 变化。</p>
+              </div>
+              <button class="ghost-button" id="refreshCompareBtn">刷新 Runs</button>
+            </div>
+            <div class="form-grid compact">
+              <label>
+                Baseline
+                <select id="compareRunA"></select>
+              </label>
+              <label>
+                Candidate
+                <select id="compareRunB"></select>
+              </label>
+            </div>
+            <div class="button-row">
+              <button class="primary-button" id="runCompareBtn">比较</button>
+            </div>
+            <div class="compare-output" id="compareOutput"></div>
+          </section>
+        </section>
+
+        <section class="page" id="page-device">
+          <div class="layout two-col">
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <h3>Device Match</h3>
+                  <p>先看这台机器的大致运行条件。后续 run 会自动保存设备快照。</p>
+                </div>
+                <button class="ghost-button" id="refreshDeviceBtn">刷新设备</button>
+              </div>
+              <div class="device-grid" id="deviceOutput"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <h3>Fit Hint</h3>
+                  <p>这是轻量建议，不替代真实跑分。先帮你判断小模型适合怎么试。</p>
+                </div>
+              </div>
+              <div class="summary-card" id="deviceFitSummary">
+                <span>Waiting</span>
+                <strong>刷新设备后显示建议。</strong>
+              </div>
+              <div class="hint-list" id="deviceHints"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="page" id="page-reports">
+          <section class="panel full">
+            <div class="panel-head">
+              <div>
+                <h3>Reports</h3>
+                <p>从最近运行生成轻量报告。完整原始数据请导出 JSON。</p>
+              </div>
+              <button class="ghost-button" id="refreshReportsBtn">刷新 Reports</button>
+            </div>
+            <div class="runs-list" id="reportsOutput"></div>
           </section>
         </section>
       </main>

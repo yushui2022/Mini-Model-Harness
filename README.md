@@ -58,6 +58,8 @@ For OpenAI-compatible runtimes, enter the base server URL. If you enter a URL en
 - **Prompt Lab**: run one model with a system prompt and user prompt.
 - **Swarm**: run a small serial multi-role workflow for planner/solver/critic style tests.
 - **Eval**: run basic JSON-defined cases with simple deterministic assertions.
+- **Compare**: compare two eval runs and spot fixed or regressed cases.
+- **Device**: inspect the local machine snapshot used for run context.
 - **Runs**: inspect recent local runs.
 
 ## Product Direction
@@ -81,6 +83,38 @@ The project should not become a generic chat UI or a heavyweight benchmark clone
 should stay focused on helping people quickly understand whether a small local model is
 useful for their task.
 
+## Eval Packs
+
+Example packs live in [`examples/eval-packs`](examples/eval-packs):
+
+- `json-extraction.json`
+- `intent-routing.json`
+- `loop-guard.json`
+- `safety-boundary.json`
+
+An eval pack can be either a raw JSON array of cases or an object with metadata and a
+`cases` array:
+
+```json
+{
+  "name": "Intent Routing Gate",
+  "version": "0.1.0",
+  "system": "Return only one label from the allowed labels.",
+  "cases": [
+    {
+      "id": "route_code_001",
+      "input": "Classify this request as refund, billing, technical, write, code, or other: write a Python sort function",
+      "check": "enum",
+      "expected": "code",
+      "choices": ["refund", "billing", "technical", "write", "code", "other"]
+    }
+  ]
+}
+```
+
+In the Eval screen, use **导入 Pack** to load a pack and **导出 Pack** to save the
+current dataset.
+
 ## Development
 
 Static checks:
@@ -91,3 +125,44 @@ node --check public/app.js
 ```
 
 The app currently has no build step and no npm dependencies.
+
+## Smoke Test
+
+Without a local model:
+
+```bash
+npm start
+```
+
+Then verify:
+
+- `http://127.0.0.1:4173/api/health` returns `ok: true`.
+- The Dashboard loads.
+- Built-in scenario cards are visible.
+- Eval pack import/export buttons are visible.
+- Runs, Compare, Device, and Reports pages open.
+
+With a local model:
+
+1. Start Ollama, LM Studio, llama.cpp server, or another compatible runtime.
+2. Open the Dashboard.
+3. Click **读取模型** and choose a model.
+4. Load a built-in scenario.
+5. Run Prompt or Eval.
+6. Export a Markdown report from Eval, Runs, or Reports.
+
+## Roadmap
+
+- Better built-in scenario packs.
+- Stronger JSON/schema diagnostics.
+- Side-by-side prompt/model comparison polish.
+- Device fit recommendations based on real run history.
+- Optional desktop packaging after the web workflow feels solid.
+
+## Limitations
+
+- The app does not download, quantize, or manage model files.
+- Runs are stored locally in `data/runs.json`.
+- Eval checks are practical and deterministic, not a full academic benchmark.
+- Swarm is experimental and should be compared with the single-call baseline before use.
+- Device Match is currently a lightweight local snapshot and hint, not a benchmark.

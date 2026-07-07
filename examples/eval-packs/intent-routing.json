@@ -1,0 +1,26 @@
+{
+  "name": "Intent Routing Gate",
+  "version": "0.1.0",
+  "description": "Checks whether a model can return one valid route label.",
+  "taskProfile": "intent_routing",
+  "recommendedModelSize": "1B-3B",
+  "system": "Return only one label from the allowed labels.",
+  "cases": [
+    {
+      "id": "route_code_001",
+      "family": "classification",
+      "input": "把请求分类为 refund、billing、technical、write、code、other：帮我写一个 Python 排序函数。",
+      "check": "enum",
+      "expected": "code",
+      "choices": ["refund", "billing", "technical", "write", "code", "other"]
+    },
+    {
+      "id": "route_refund_001",
+      "family": "classification",
+      "input": "把请求分类为 refund、billing、technical、write、code、other：我想退掉昨天买的会员。",
+      "check": "enum",
+      "expected": "refund",
+      "choices": ["refund", "billing", "technical", "write", "code", "other"]
+    }
+  ]
+}
