@@ -466,14 +466,14 @@ function switchPage(page) {
     button.classList.toggle("active", button.dataset.page === page);
   });
   const titles = {
-    control: "Dashboard",
-    lab: "Prompt",
-    swarm: "Swarm",
-    eval: "Eval",
-    compare: "Compare",
-    device: "Device",
-    reports: "Reports",
-    runs: "Runs"
+    control: "运行总览",
+    lab: "Prompt 调教",
+    swarm: "Swarm 编排",
+    eval: "Eval Gate",
+    compare: "运行对比",
+    device: "设备匹配",
+    reports: "报告导出",
+    runs: "运行记录"
   };
   $("#pageTitle").textContent = titles[page] || "Mini Harness";
   if (page === "runs") loadRuns();

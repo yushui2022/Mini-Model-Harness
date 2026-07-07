@@ -17,14 +17,41 @@
           </div>
         </div>
         <nav class="nav" aria-label="Main">
-          <button class="nav-item active" data-page="control">Dashboard</button>
-          <button class="nav-item" data-page="lab">Prompt</button>
-          <button class="nav-item" data-page="eval">Eval</button>
-          <button class="nav-item" data-page="compare">Compare</button>
-          <button class="nav-item" data-page="device">Device</button>
-          <button class="nav-item" data-page="swarm">Swarm</button>
-          <button class="nav-item" data-page="runs">Runs</button>
-          <button class="nav-item" data-page="reports">Reports</button>
+          <div class="nav-section">运行</div>
+          <button class="nav-item active" data-page="control">
+            <span class="nav-glyph">D</span>
+            <span><strong>Dashboard</strong><small>运行总览</small></span>
+          </button>
+          <button class="nav-item" data-page="lab">
+            <span class="nav-glyph">P</span>
+            <span><strong>Prompt</strong><small>单模型调教</small></span>
+          </button>
+          <button class="nav-item" data-page="eval">
+            <span class="nav-glyph">E</span>
+            <span><strong>Eval</strong><small>输出验收</small></span>
+          </button>
+          <button class="nav-item" data-page="compare">
+            <span class="nav-glyph">C</span>
+            <span><strong>Compare</strong><small>前后对比</small></span>
+          </button>
+          <div class="nav-section">本机</div>
+          <button class="nav-item" data-page="device">
+            <span class="nav-glyph">M</span>
+            <span><strong>Device</strong><small>测速与内存</small></span>
+          </button>
+          <button class="nav-item" data-page="swarm">
+            <span class="nav-glyph">S</span>
+            <span><strong>Swarm</strong><small>多角色链路</small></span>
+          </button>
+          <div class="nav-section">记录</div>
+          <button class="nav-item" data-page="runs">
+            <span class="nav-glyph">R</span>
+            <span><strong>Runs</strong><small>历史运行</small></span>
+          </button>
+          <button class="nav-item" data-page="reports">
+            <span class="nav-glyph">T</span>
+            <span><strong>Reports</strong><small>报告导出</small></span>
+          </button>
         </nav>
         <div class="sidebar-footer">
           <span class="status-dot" id="serverDot"></span>
@@ -36,7 +63,7 @@
         <header class="topbar">
           <div>
             <p class="eyebrow">Local small-model harness</p>
-            <h2 id="pageTitle">Dashboard</h2>
+            <h2 id="pageTitle">运行总览</h2>
             <p class="topbar-subtitle" id="profileLine">Ollama · no model selected</p>
           </div>
           <div class="topbar-actions">
@@ -156,7 +183,7 @@
             </section>
           </div>
 
-          <section class="panel full">
+          <section class="panel full guide-panel">
             <div class="panel-head">
               <div>
                 <h3>推荐本地模型档位</h3>
