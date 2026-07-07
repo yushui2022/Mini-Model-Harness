@@ -1245,6 +1245,34 @@ Acceptance:
 - A new user can run an eval in 15 minutes.
 - The README does not overclaim.
 
+### Milestone 10: Benchmark And Runtime Memory
+
+Status: complete
+Depends on: Milestone 9
+Primary files: `server.js`, `public/app.js`, `public/index.html`, `public/styles.css`, `README.md`
+Do not touch: streaming transport, desktop packaging, storage migration
+Definition of done: Device page shows memory usage, runtime process memory, and a non-streaming generation speed test.
+
+Goal:
+
+Help users answer whether this local computer and runtime are worth using for the selected small model.
+
+Tasks:
+
+- Show system memory used percent.
+- Show harness process memory percent.
+- Detect runtime process working set on Windows for common providers.
+- Add non-streaming generation benchmark.
+- Save benchmark runs.
+- Report latency, tokens/s, chars/s, and memory before/after.
+
+Acceptance:
+
+- `/api/device/processes?provider=ollama` returns process memory data or a clear no-process note.
+- `/api/benchmark/generate` runs model generation speed tests and saves a `benchmark` run.
+- Device page exposes runtime memory and benchmark UI.
+- README documents limitations around process memory and non-streaming TPS.
+
 ## 15. Implementation Rules For Future Agents
 
 Follow these unless the user explicitly changes direction:
@@ -1440,3 +1468,10 @@ Update this section after long-running work.
   - Added `examples/reports/sample-report.md`.
   - Verified static checks, page resources, device endpoint, export endpoints, UTF-8 text, and eval pack parsing.
   - All roadmap milestones in this plan are now complete in the product-first MVP scope.
+- Completed Milestone 10:
+  - Added runtime process memory detection endpoint for Windows-first provider process matching.
+  - Added system memory used percent and harness memory percent to device snapshots.
+  - Added non-streaming generation benchmark API saved as `benchmark` runs.
+  - Added Device page Runtime Memory and Generation Speed Test sections.
+  - Added benchmark reporting fields for latency, tokens/s, chars/s, memory before/after, and runtime memory delta.
+  - Documented memory and non-streaming benchmark limitations in `README.md`.

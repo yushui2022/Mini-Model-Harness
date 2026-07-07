@@ -2,6 +2,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
+const { execFile } = require("child_process");
 const { URL } = require("url");
 
 const PORT = Number(process.env.PORT || 4173);
@@ -109,6 +110,27 @@ function defaultBaseUrl(provider) {
   if (provider === "lmstudio") return "http://127.0.0.1:1234";
   if (provider === "llamacpp") return "http://127.0.0.1:8080";
   return "http://127.0.0.1:8000";
+}
+
+function providerProcessNames(provider) {
+  const normalized = normalizeProvider(provider);
+  if (normalized === "ollama") return ["ollama", "ollama app"];
+  if (normalized === "lmstudio") return ["lm studio", "lmstudio", "llama-server", "llama"];
+  if (normalized === "llamacpp") return ["llama-server", "llama", "server"];
+  if (normalized === "vllm") return ["python", "vllm"];
+  return ["python", "node", "server"];
+}
+
+function execFilePromise(command, args, timeoutMs = 10000) {
+  return new Promise((resolve, reject) => {
+    execFile(command, args, { timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) => {
+      if (error) {
+        reject(Object.assign(error, { stderr }));
+        return;
+      }
+      resolve(stdout);
+    });
+  });
 }
 
 async function fetchJson(url, options = {}, timeoutMs = DEFAULT_TIMEOUT_MS) {
@@ -242,7 +264,13 @@ async function chatCompletion(input) {
       usage: {
         prompt_tokens: data.prompt_eval_count,
         completion_tokens: data.eval_count,
-        total_duration_ms: data.total_duration ? Math.round(data.total_duration / 1000000) : undefined
+        total_duration_ms: data.total_duration ? Math.round(data.total_duration / 1000000) : undefined,
+        prompt_eval_duration_ms: data.prompt_eval_duration ? Math.round(data.prompt_eval_duration / 1000000) : undefined,
+        eval_duration_ms: data.eval_duration ? Math.round(data.eval_duration / 1000000) : undefined,
+        decode_tokens_per_second:
+          data.eval_count && data.eval_duration
+            ? Number((data.eval_count / (data.eval_duration / 1000000000)).toFixed(2))
+            : undefined
       },
       raw: compactRaw(data)
     };
@@ -298,6 +326,9 @@ function writeRuns(runs) {
 function deviceSnapshot() {
   const cpus = os.cpus() || [];
   const memory = process.memoryUsage();
+  const totalBytes = os.totalmem();
+  const freeBytes = os.freemem();
+  const usedBytes = totalBytes - freeBytes;
   return {
     os: {
       platform: os.platform(),
@@ -309,16 +340,72 @@ function deviceSnapshot() {
       cores: cpus.length || os.availableParallelism?.() || 1
     },
     memory: {
-      totalBytes: os.totalmem(),
-      freeBytes: os.freemem(),
+      totalBytes,
+      freeBytes,
+      usedBytes,
+      usedPct: totalBytes ? Number(((usedBytes / totalBytes) * 100).toFixed(1)) : 0,
       processRssBytes: memory.rss,
-      processHeapUsedBytes: memory.heapUsed
+      processHeapUsedBytes: memory.heapUsed,
+      processMemoryPct: totalBytes ? Number(((memory.rss / totalBytes) * 100).toFixed(2)) : 0
     },
     runtime: {
       node: process.version,
       pid: process.pid
     },
     capturedAt: new Date().toISOString()
+  };
+}
+
+async function detectRuntimeProcesses(provider) {
+  const totalBytes = os.totalmem();
+  const names = providerProcessNames(provider);
+  if (process.platform !== "win32") {
+    return {
+      provider: normalizeProvider(provider),
+      processNames: names,
+      processes: [],
+      totalWorkingSetBytes: 0,
+      memoryPct: 0,
+      note: "Runtime process memory detection is currently implemented for Windows first."
+    };
+  }
+
+  const script = [
+    "$ErrorActionPreference='SilentlyContinue'",
+    "$items = Get-Process | Select-Object Id,ProcessName,Path,WorkingSet64,PrivateMemorySize64,CPU",
+    "$items | ConvertTo-Json -Compress -Depth 3"
+  ].join("; ");
+  const stdout = await execFilePromise("powershell.exe", ["-NoProfile", "-Command", script], 15000);
+  const parsed = stdout.trim() ? JSON.parse(stdout) : [];
+  const rows = Array.isArray(parsed) ? parsed : [parsed];
+  const processes = rows
+    .filter((item) => {
+      const name = String(item.ProcessName || "").toLowerCase();
+      const fullPath = String(item.Path || "").toLowerCase();
+      return names.some((needle) => name.includes(needle) || fullPath.includes(needle));
+    })
+    .map((item) => ({
+      pid: item.Id,
+      name: item.ProcessName,
+      path: item.Path || "",
+      workingSetBytes: Number(item.WorkingSet64 || 0),
+      privateMemoryBytes: Number(item.PrivateMemorySize64 || 0),
+      memoryPct: totalBytes ? Number(((Number(item.WorkingSet64 || 0) / totalBytes) * 100).toFixed(2)) : 0,
+      cpuSeconds: Number(item.CPU || 0)
+    }))
+    .sort((a, b) => b.workingSetBytes - a.workingSetBytes)
+    .slice(0, 12);
+  const totalWorkingSetBytes = processes.reduce((sum, item) => sum + item.workingSetBytes, 0);
+  const totalPrivateMemoryBytes = processes.reduce((sum, item) => sum + item.privateMemoryBytes, 0);
+  return {
+    provider: normalizeProvider(provider),
+    processNames: names,
+    processes,
+    totalWorkingSetBytes,
+    totalPrivateMemoryBytes,
+    memoryPct: totalBytes ? Number(((totalWorkingSetBytes / totalBytes) * 100).toFixed(2)) : 0,
+    privateMemoryPct: totalBytes ? Number(((totalPrivateMemoryBytes / totalBytes) * 100).toFixed(2)) : 0,
+    note: processes.length ? "Runtime process memory is process working set, not exact model weight memory." : "No matching runtime process detected."
   };
 }
 
@@ -755,6 +842,128 @@ function scoreCase(testCase, output) {
   };
 }
 
+function percentile(values, p) {
+  const sorted = values.filter((value) => Number.isFinite(value)).sort((a, b) => a - b);
+  if (!sorted.length) return 0;
+  const index = Math.min(sorted.length - 1, Math.ceil((p / 100) * sorted.length) - 1);
+  return sorted[index];
+}
+
+function average(values) {
+  const clean = values.filter((value) => Number.isFinite(value));
+  return clean.length ? clean.reduce((sum, value) => sum + value, 0) / clean.length : 0;
+}
+
+function benchmarkMetrics(result) {
+  const latencySeconds = Math.max(0.001, result.latencyMs / 1000);
+  const completionTokens = Number(result.usage?.completion_tokens || 0);
+  const outputChars = result.text.length;
+  const runtimeTps = Number(result.usage?.decode_tokens_per_second || 0);
+  const approxTokens = completionTokens || Math.max(1, Math.round(outputChars / 4));
+  return {
+    latencyMs: result.latencyMs,
+    outputChars,
+    completionTokens: completionTokens || undefined,
+    tokensPerSecond: runtimeTps || Number((approxTokens / latencySeconds).toFixed(2)),
+    tokensPerSecondSource: runtimeTps ? "runtime" : completionTokens ? "usage" : "estimated_chars",
+    charsPerSecond: Number((outputChars / latencySeconds).toFixed(2)),
+    usage: result.usage || {}
+  };
+}
+
+async function runBenchmark(input) {
+  const profile = getProfile(input.profile || {});
+  const params = cleanParams(input.params || {});
+  const runs = clampInteger(input.runs, 1, 10, 3);
+  const warmup = Boolean(input.warmup);
+  const prompt = String(input.prompt || "Write a concise 200-word note about local small model evaluation.").trim();
+  if (!prompt) throw badRequest("Missing benchmark prompt");
+
+  const memoryBefore = deviceSnapshot();
+  const runtimeBefore = await detectRuntimeProcesses(profile.provider).catch((error) => ({
+    provider: profile.provider,
+    processes: [],
+    totalWorkingSetBytes: 0,
+    memoryPct: 0,
+    note: error.message
+  }));
+
+  if (warmup) {
+    await chatCompletion({
+      profile,
+      params: { ...params, max_tokens: Math.min(params.max_tokens, 64) },
+      messages: [
+        { role: "system", content: "You are warming up a local model benchmark. Answer briefly." },
+        { role: "user", content: "Return OK." }
+      ]
+    });
+  }
+
+  const results = [];
+  for (let index = 0; index < runs; index += 1) {
+    const result = await chatCompletion({
+      profile,
+      params,
+      messages: [
+        { role: "system", content: "You are running a local model generation speed test. Follow the prompt directly." },
+        { role: "user", content: prompt }
+      ]
+    });
+    results.push({
+      index: index + 1,
+      text: result.text,
+      ...benchmarkMetrics(result)
+    });
+  }
+
+  const memoryAfter = deviceSnapshot();
+  const runtimeAfter = await detectRuntimeProcesses(profile.provider).catch((error) => ({
+    provider: profile.provider,
+    processes: [],
+    totalWorkingSetBytes: 0,
+    memoryPct: 0,
+    note: error.message
+  }));
+  const latencies = results.map((item) => item.latencyMs);
+  const tps = results.map((item) => item.tokensPerSecond);
+  const charsPerSecond = results.map((item) => item.charsPerSecond);
+  const summary = {
+    runs,
+    warmup,
+    avgLatencyMs: Math.round(average(latencies)),
+    p50LatencyMs: Math.round(percentile(latencies, 50)),
+    p95LatencyMs: Math.round(percentile(latencies, 95)),
+    avgTokensPerSecond: Number(average(tps).toFixed(2)),
+    avgCharsPerSecond: Number(average(charsPerSecond).toFixed(2)),
+    memoryBefore: memoryBefore.memory,
+    memoryAfter: memoryAfter.memory,
+    runtimeBefore,
+    runtimeAfter,
+    runtimeMemoryDeltaBytes: runtimeAfter.totalWorkingSetBytes - runtimeBefore.totalWorkingSetBytes,
+    runtimePrivateMemoryDeltaBytes:
+      (runtimeAfter.totalPrivateMemoryBytes || 0) - (runtimeBefore.totalPrivateMemoryBytes || 0)
+  };
+
+  const run = appendRun({
+    type: "benchmark",
+    title: `Benchmark ${profile.model || profile.provider}`,
+    profile: publicProfile(profile),
+    params,
+    summary,
+    result: {
+      prompt,
+      runs: results
+    }
+  });
+
+  return {
+    runId: run.id,
+    profile: publicProfile(profile),
+    summary,
+    results
+  };
+}
+
 async function runEval(input) {
   const profile = getProfile(input.profile || {});
   const params = cleanParams(input.params || {});
@@ -877,6 +1086,23 @@ function generateMarkdownReport(run) {
   const profile = run.profile || {};
   const device = run.device || {};
   const cases = run.result?.cases || [];
+  const benchmarkRuns = run.result?.runs || [];
+  const benchmarkSection = run.type === "benchmark"
+    ? [
+        "## Benchmark",
+        "",
+        `- Runs: ${summary.runs || benchmarkRuns.length || 0}`,
+        `- Warmup: ${summary.warmup ? "yes" : "no"}`,
+        `- Avg latency: ${summary.avgLatencyMs || 0}ms`,
+        `- P50 latency: ${summary.p50LatencyMs || 0}ms`,
+        `- P95 latency: ${summary.p95LatencyMs || 0}ms`,
+        `- Avg tokens/s: ${summary.avgTokensPerSecond || 0}`,
+        `- Avg chars/s: ${summary.avgCharsPerSecond || 0}`,
+        `- Runtime memory delta: ${summary.runtimeMemoryDeltaBytes || 0} bytes`,
+        `- Runtime private memory delta: ${summary.runtimePrivateMemoryDeltaBytes || 0} bytes`,
+        ""
+      ].join("\n")
+    : "";
   const failedCases = cases.filter((item) => !item.passed).slice(0, 5);
   const tags = Object.entries(summary.failureTagCounts || {})
     .map(([tag, count]) => `- ${tag}: ${count}`)
@@ -933,6 +1159,7 @@ function generateMarkdownReport(run) {
     `- Average score: ${formatPercent(summary.avgScore)}`,
     `- Latency: ${summary.latencyMs || 0}ms`,
     "",
+    benchmarkSection,
     "## Failure Tags",
     "",
     tags,
@@ -985,6 +1212,13 @@ async function handleApi(req, res, pathname) {
 
     if (req.method === "GET" && pathname === "/api/device") {
       sendJson(res, 200, { device: deviceSnapshot() });
+      return;
+    }
+
+    if (req.method === "GET" && pathname === "/api/device/processes") {
+      const requestUrl = new URL(req.url, `http://${req.headers.host || `${HOST}:${PORT}`}`);
+      const provider = requestUrl.searchParams.get("provider") || "ollama";
+      sendJson(res, 200, { runtime: await detectRuntimeProcesses(provider) });
       return;
     }
 
@@ -1051,6 +1285,11 @@ async function handleApi(req, res, pathname) {
 
     if (pathname === "/api/eval") {
       sendJson(res, 200, await runEval(body));
+      return;
+    }
+
+    if (pathname === "/api/benchmark/generate") {
+      sendJson(res, 200, await runBenchmark(body));
       return;
     }
 

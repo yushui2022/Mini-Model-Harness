@@ -336,6 +336,7 @@
                   <option value="chat">Chat</option>
                   <option value="eval">Eval</option>
                   <option value="swarm">Swarm</option>
+                  <option value="benchmark">Benchmark</option>
                 </select>
               </label>
             </div>
@@ -393,6 +394,53 @@
                 <strong>刷新设备后显示建议。</strong>
               </div>
               <div class="hint-list" id="deviceHints"></div>
+            </section>
+          </div>
+          <div class="layout two-col">
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <h3>Runtime Memory</h3>
+                  <p>按 provider 探测本地运行时进程工作集。它是近似运行占用，不等于精确模型权重内存。</p>
+                </div>
+                <button class="ghost-button" id="refreshRuntimeMemoryBtn">刷新内存</button>
+              </div>
+              <div class="summary-card" id="runtimeMemorySummary">
+                <span>Waiting</span>
+                <strong>刷新后显示运行时进程内存占比。</strong>
+              </div>
+              <div class="runtime-process-list" id="runtimeProcessOutput"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <h3>Generation Speed Test</h3>
+                  <p>非流式生成测速：latency、tokens/s、chars/s，并保存为 benchmark run。</p>
+                </div>
+                <span class="badge">non-streaming</span>
+              </div>
+              <div class="form-grid compact">
+                <label>
+                  Runs
+                  <input id="benchmarkRunsInput" type="number" min="1" max="10" step="1" value="3" />
+                </label>
+                <label>
+                  Max Tokens
+                  <input id="benchmarkMaxTokensInput" type="number" min="16" max="2048" step="16" value="256" />
+                </label>
+              </div>
+              <label class="inline-check">
+                <input id="benchmarkWarmupInput" type="checkbox" checked />
+                Warm up once before measuring
+              </label>
+              <label class="stacked">
+                Prompt
+                <textarea id="benchmarkPromptInput" rows="4" spellcheck="false"></textarea>
+              </label>
+              <div class="button-row">
+                <button class="primary-button" id="runBenchmarkBtn">运行测速</button>
+              </div>
+              <div class="benchmark-output" id="benchmarkOutput"></div>
             </section>
           </div>
         </section>

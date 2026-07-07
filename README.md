@@ -59,7 +59,7 @@ For OpenAI-compatible runtimes, enter the base server URL. If you enter a URL en
 - **Swarm**: run a small serial multi-role workflow for planner/solver/critic style tests.
 - **Eval**: run basic JSON-defined cases with simple deterministic assertions.
 - **Compare**: compare two eval runs and spot fixed or regressed cases.
-- **Device**: inspect the local machine snapshot used for run context.
+- **Device**: inspect the local machine snapshot, runtime process memory, and run generation speed tests.
 - **Runs**: inspect recent local runs.
 
 ## Product Direction
@@ -78,6 +78,8 @@ After that loop feels good, the project can grow into stronger eval features:
 - simple report export
 - run comparison
 - device/model fit guidance
+- runtime memory monitoring
+- generation speed tests with tokens/sec and chars/sec
 
 The project should not become a generic chat UI or a heavyweight benchmark clone. It
 should stay focused on helping people quickly understand whether a small local model is
@@ -165,4 +167,6 @@ With a local model:
 - Runs are stored locally in `data/runs.json`.
 - Eval checks are practical and deterministic, not a full academic benchmark.
 - Swarm is experimental and should be compared with the single-call baseline before use.
-- Device Match is currently a lightweight local snapshot and hint, not a benchmark.
+- Device Match uses system memory and runtime process working set. This is useful for
+  local fit decisions, but it is not exact model weight or VRAM accounting.
+- Generation speed tests are non-streaming in this version, so TTFT is not measured yet.

@@ -553,6 +553,52 @@ textarea {
   text-overflow: ellipsis;
 }
 
+.runtime-process-list,
+.benchmark-table,
+.benchmark-output {
+  display: grid;
+  gap: 10px;
+}
+
+.process-row,
+.benchmark-row {
+  display: grid;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fbf8f1;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.process-row {
+  grid-template-columns: minmax(0, 1fr) 120px 100px 70px;
+}
+
+.benchmark-row {
+  grid-template-columns: 44px 90px 100px 110px minmax(90px, 1fr);
+}
+
+.process-row div:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.process-row strong,
+.benchmark-row strong {
+  color: var(--ink);
+}
+
+.process-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .matrix {
   display: grid;
   border: 1px solid var(--line);
@@ -938,7 +984,9 @@ textarea {
   .compare-summary,
   .compare-columns,
   .device-grid,
-  .run-summary {
+  .run-summary,
+  .process-row,
+  .benchmark-row {
     grid-template-columns: 1fr;
   }
 

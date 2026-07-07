@@ -478,7 +478,10 @@ function switchPage(page) {
   $("#pageTitle").textContent = titles[page] || "Mini Harness";
   if (page === "runs") loadRuns();
   if (page === "compare") loadCompareRuns();
-  if (page === "device") loadDevice();
+  if (page === "device") {
+    loadDevice();
+    loadRuntimeMemory();
+  }
   if (page === "reports") loadReports();
 }
 
@@ -507,11 +510,7 @@ async function refreshDashboardFromRuns() {
         id: latest.id,
         type: latest.type,
         title: latest.title,
-        label: latest.summary?.passed !== undefined
-          ? `${latest.summary.passed}/${latest.summary.total || 0}`
-          : latest.summary?.latencyMs
-            ? `${latest.summary.latencyMs}ms`
-            : latest.title,
+        label: runSummaryLabel(latest),
         failureHotspot: firstTag ? `${firstTag[0]} ${firstTag[1]}` : "None"
       };
     }
@@ -864,6 +863,14 @@ function runLabel(run) {
   return `${passText} · ${model} · ${new Date(run.createdAt).toLocaleString()}`;
 }
 
+function runSummaryLabel(run) {
+  const summary = run.summary || {};
+  if (run.type === "benchmark") return `${summary.avgTokensPerSecond || 0} tok/s · ${summary.p50LatencyMs || 0}ms p50`;
+  if (run.type === "eval" && summary.total) return `${summary.passed}/${summary.total} pass · ${Math.round((summary.passRate || 0) * 100)}%`;
+  if (summary.latencyMs) return `${summary.latencyMs}ms`;
+  return "complete";
+}
+
 async function loadCompareRuns() {
   const output = $("#compareOutput");
   if (output) output.innerHTML = '<div class="run-item"><pre class="run-json">loading eval runs</pre></div>';
@@ -999,6 +1006,8 @@ async function loadDevice() {
       <div class="device-item"><span>Cores</span><strong>${escapeHtml(cores)}</strong></div>
       <div class="device-item"><span>Total Memory</span><strong>${escapeHtml(formatGb(total))}</strong></div>
       <div class="device-item"><span>Free Memory</span><strong>${escapeHtml(formatGb(free))}</strong></div>
+      <div class="device-item"><span>System Used</span><strong>${escapeHtml(`${device.memory?.usedPct || 0}%`)}</strong></div>
+      <div class="device-item"><span>Harness RSS</span><strong>${escapeHtml(`${formatGb(device.memory?.processRssBytes || 0)} · ${device.memory?.processMemoryPct || 0}%`)}</strong></div>
       <div class="device-item"><span>Node</span><strong>${escapeHtml(device.runtime?.node || "")}</strong></div>
     `;
     setSummary("#deviceFitSummary", "Device Fit", verdict, kind);
@@ -1010,6 +1019,103 @@ async function loadDevice() {
   } catch (error) {
     output.innerHTML = `<div class="model-pill"><span>${escapeHtml(error.message)}</span></div>`;
     setSummary("#deviceFitSummary", "Failed", error.message, "bad");
+  }
+}
+
+async function loadRuntimeMemory() {
+  const profile = getProfileFromForm();
+  const output = $("#runtimeProcessOutput");
+  output.innerHTML = '<div class="model-pill"><span>loading runtime processes</span></div>';
+  try {
+    const data = await api(`/api/device/processes?provider=${encodeURIComponent(profile.provider)}`);
+    const runtime = data.runtime || {};
+    setSummary(
+      "#runtimeMemorySummary",
+      "Runtime Memory",
+      `Private ${formatGb(runtime.totalPrivateMemoryBytes || 0)} · ${runtime.privateMemoryPct || 0}% · WS ${formatGb(runtime.totalWorkingSetBytes || 0)}`,
+      runtime.processes?.length ? "ok" : "warn"
+    );
+    output.innerHTML = runtime.processes?.length
+      ? runtime.processes.map((processInfo) => `
+        <div class="process-row">
+          <div>
+            <strong>${escapeHtml(processInfo.name)} #${escapeHtml(processInfo.pid)}</strong>
+            <span>${escapeHtml(processInfo.path || "path unavailable")}</span>
+          </div>
+          <div>Private ${escapeHtml(formatGb(processInfo.privateMemoryBytes))}</div>
+          <div>WS ${escapeHtml(formatGb(processInfo.workingSetBytes))}</div>
+          <div>${escapeHtml(`${processInfo.memoryPct}%`)}</div>
+        </div>
+      `).join("")
+      : `<div class="model-pill"><span>${escapeHtml(runtime.note || "No matching process detected.")}</span></div>`;
+  } catch (error) {
+    setSummary("#runtimeMemorySummary", "Failed", error.message, "bad");
+    output.innerHTML = `<div class="model-pill"><span>${escapeHtml(error.message)}</span></div>`;
+  }
+}
+
+function renderBenchmarkResult(data) {
+  const summary = data.summary || {};
+  const rows = (data.results || []).map((item) => `
+    <div class="benchmark-row">
+      <span>#${item.index}</span>
+      <strong>${item.latencyMs}ms</strong>
+      <span>${item.tokensPerSecond} tok/s</span>
+      <span>${item.charsPerSecond} chars/s</span>
+      <span>${escapeHtml(item.tokensPerSecondSource)}</span>
+    </div>
+  `).join("");
+  $("#benchmarkOutput").innerHTML = `
+    <div class="compare-summary">
+      <div class="status-tile"><span>Avg TPS</span><strong>${summary.avgTokensPerSecond || 0}</strong></div>
+      <div class="status-tile"><span>P50 Latency</span><strong>${summary.p50LatencyMs || 0}ms</strong></div>
+      <div class="status-tile"><span>P95 Latency</span><strong>${summary.p95LatencyMs || 0}ms</strong></div>
+      <div class="status-tile"><span>Private Mem Delta</span><strong>${formatGb(Math.abs(summary.runtimePrivateMemoryDeltaBytes || summary.runtimeMemoryDeltaBytes || 0))}</strong></div>
+    </div>
+    <div class="summary-card ok">
+      <span>Benchmark Run</span>
+      <strong>${escapeHtml(data.runId)} saved · ${summary.avgCharsPerSecond || 0} chars/s avg</strong>
+    </div>
+    <div class="benchmark-table">${rows}</div>
+  `;
+}
+
+async function runBenchmark() {
+  persistFormState();
+  const button = $("#runBenchmarkBtn");
+  setBusy(button, true, "测速中");
+  $("#benchmarkOutput").innerHTML = '<div class="run-item"><pre class="run-json">running benchmark</pre></div>';
+  try {
+    const params = {
+      ...state.params,
+      max_tokens: Number($("#benchmarkMaxTokensInput").value) || state.params.max_tokens
+    };
+    const data = await api("/api/benchmark/generate", {
+      method: "POST",
+      body: JSON.stringify({
+        profile: state.profile,
+        params,
+        prompt: $("#benchmarkPromptInput").value,
+        runs: Number($("#benchmarkRunsInput").value),
+        warmup: $("#benchmarkWarmupInput").checked
+      })
+    });
+    renderBenchmarkResult(data);
+    state.latestRun = {
+      id: data.runId,
+      type: "benchmark",
+      title: "Benchmark",
+      label: `${data.summary.avgTokensPerSecond} tok/s`,
+      failureHotspot: "None"
+    };
+    renderDashboard();
+    loadRuntimeMemory();
+    showToast("Benchmark complete");
+  } catch (error) {
+    $("#benchmarkOutput").innerHTML = `<div class="run-item"><pre class="run-json">${escapeHtml(error.message)}</pre></div>`;
+    showToast(error.message);
+  } finally {
+    setBusy(button, false);
   }
 }
 
@@ -1026,11 +1132,7 @@ async function loadRuns() {
         id: runs[0].id,
         type: runs[0].type,
         title: runs[0].title,
-        label: runs[0].summary?.passed !== undefined
-          ? `${runs[0].summary.passed}/${runs[0].summary.total || 0}`
-          : runs[0].summary?.latencyMs
-            ? `${runs[0].summary.latencyMs}ms`
-            : runs[0].title,
+        label: runSummaryLabel(runs[0]),
         failureHotspot: firstTag ? `${firstTag[0]} ${firstTag[1]}` : "None"
       };
       renderDashboard();
@@ -1065,11 +1167,7 @@ function renderRunsList() {
 
 function renderRunCard(run) {
   const summary = run.summary || {};
-  const resultLine = run.type === "eval" && summary.total
-    ? `${summary.passed}/${summary.total} pass · ${Math.round((summary.passRate || 0) * 100)}%`
-    : summary.latencyMs
-      ? `${summary.latencyMs}ms`
-      : "complete";
+  const resultLine = runSummaryLabel(run);
   const tags = Object.entries(summary.failureTagCounts || {})
     .map(([tag, count]) => `<span class="tag-chip">${escapeHtml(tag)} ${count}</span>`)
     .join("");
@@ -1099,7 +1197,7 @@ async function loadReports() {
   output.innerHTML = '<div class="run-item"><pre class="run-json">loading reports</pre></div>';
   try {
     const data = await api("/api/runs");
-    const runs = (data.runs || []).filter((run) => ["eval", "swarm", "chat"].includes(run.type));
+    const runs = (data.runs || []).filter((run) => ["eval", "swarm", "chat", "benchmark"].includes(run.type));
     output.innerHTML = runs.length
       ? runs.slice(0, 50).map((run) => `
         <div class="run-item">
@@ -1109,7 +1207,7 @@ async function loadReports() {
           </div>
           <div class="run-summary">
             <div><strong>${escapeHtml(run.profile?.model || "no model")}</strong></div>
-            <div>${escapeHtml(run.summary?.passed !== undefined ? `${run.summary.passed}/${run.summary.total} pass` : `${run.summary?.latencyMs || 0}ms`)}</div>
+            <div>${escapeHtml(runSummaryLabel(run))}</div>
             <div>${escapeHtml(run.id)}</div>
           </div>
           <div class="button-row export-row">
@@ -1200,6 +1298,8 @@ function bindEvents() {
   $("#refreshCompareBtn").addEventListener("click", loadCompareRuns);
   $("#runCompareBtn").addEventListener("click", compareRuns);
   $("#refreshDeviceBtn").addEventListener("click", loadDevice);
+  $("#refreshRuntimeMemoryBtn").addEventListener("click", loadRuntimeMemory);
+  $("#runBenchmarkBtn").addEventListener("click", runBenchmark);
   $("#refreshReportsBtn").addEventListener("click", loadReports);
   $("#refreshRunsBtn").addEventListener("click", loadRuns);
   $("#runsSearchInput").addEventListener("input", renderRunsList);
@@ -1217,6 +1317,10 @@ function initDefaults() {
   $("#promptOutput").textContent = "Ready. Run the loaded scenario or choose another one from Dashboard.";
   $("#evalOutput").innerHTML =
     '<div class="eval-case"><pre>Ready. Run the loaded scenario to see pass/fail results.</pre></div>';
+  $("#benchmarkPromptInput").value =
+    "Write a concise 180-word explanation of why local small-model evaluation matters. Use plain language.";
+  $("#benchmarkOutput").innerHTML =
+    '<div class="run-item"><pre class="run-json">Ready. Select a model, then run a generation speed test.</pre></div>';
   refreshDashboardFromRuns();
 }
 
