@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Mini Model Harness</title>
+    <title>小模型调教台</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
@@ -12,97 +12,92 @@
         <div class="brand">
           <div class="brand-mark">MH</div>
           <div>
-            <h1>Mini Harness</h1>
-            <p>1B-3B local model lab</p>
+            <h1 data-i18n="brandTitle">小模型调教台</h1>
           </div>
         </div>
-        <nav class="nav" aria-label="Main">
-          <div class="nav-section">运行</div>
+        <nav class="nav" aria-label="主导航" data-i18n-aria-label="navAria">
+          <div class="nav-section" data-i18n="navRun">运行</div>
           <button class="nav-item active" data-page="control">
-            <span class="nav-glyph">D</span>
-            <span><strong>Dashboard</strong><small>运行总览</small></span>
+            <span class="nav-glyph" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 13.5h5v6H4z" /><path d="M10 4.5h5v15h-5z" /><path d="M16 9h4v10.5h-4z" /></svg>
+            </span>
+            <span><strong data-i18n="navDashboard">运行总览</strong></span>
           </button>
           <button class="nav-item" data-page="lab">
-            <span class="nav-glyph">P</span>
-            <span><strong>Prompt</strong><small>单模型调教</small></span>
+            <span class="nav-glyph" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 6.5h16" /><path d="M4 12h10" /><path d="M4 17.5h7" /><path d="M17 15l3 3" /><path d="M20 15l-3 3" /></svg>
+            </span>
+            <span><strong data-i18n="navPrompt">单模型调教</strong></span>
           </button>
           <button class="nav-item" data-page="eval">
-            <span class="nav-glyph">E</span>
-            <span><strong>Eval</strong><small>输出验收</small></span>
+            <span class="nav-glyph" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M5 4.5h14v15H5z" /><path d="M8 9l2.2 2.2L14 7.4" /><path d="M8 15h8" /></svg>
+            </span>
+            <span><strong data-i18n="navEval">输出验收</strong></span>
           </button>
           <button class="nav-item" data-page="compare">
-            <span class="nav-glyph">C</span>
-            <span><strong>Compare</strong><small>前后对比</small></span>
+            <span class="nav-glyph" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M7 7h10" /><path d="M14 4l3 3-3 3" /><path d="M17 17H7" /><path d="M10 14l-3 3 3 3" /></svg>
+            </span>
+            <span><strong data-i18n="navCompare">前后对比</strong></span>
           </button>
-          <div class="nav-section">本机</div>
+          <div class="nav-section" data-i18n="navLocal">本机</div>
           <button class="nav-item" data-page="device">
-            <span class="nav-glyph">M</span>
-            <span><strong>Device</strong><small>测速与内存</small></span>
+            <span class="nav-glyph" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M5 6h14v9H5z" /><path d="M9 19h6" /><path d="M12 15v4" /></svg>
+            </span>
+            <span><strong data-i18n="navDevice">设备匹配</strong></span>
           </button>
           <button class="nav-item" data-page="swarm">
-            <span class="nav-glyph">S</span>
-            <span><strong>Swarm</strong><small>多角色链路</small></span>
+            <span class="nav-glyph" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="2.4" /><circle cx="6.5" cy="16.5" r="2.4" /><circle cx="17.5" cy="16.5" r="2.4" /><path d="M10.8 8.1 7.8 14" /><path d="M13.2 8.1 16.2 14" /><path d="M9 16.5h6" /></svg>
+            </span>
+            <span><strong data-i18n="navSwarm">多角色链路</strong></span>
           </button>
-          <div class="nav-section">记录</div>
+          <div class="nav-section" data-i18n="navRecords">记录</div>
           <button class="nav-item" data-page="runs">
-            <span class="nav-glyph">R</span>
-            <span><strong>Runs</strong><small>历史运行</small></span>
+            <span class="nav-glyph" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M6 5h12v14H6z" /><path d="M9 9h6" /><path d="M9 13h6" /><path d="M9 17h3" /></svg>
+            </span>
+            <span><strong data-i18n="navRuns">历史运行</strong></span>
           </button>
           <button class="nav-item" data-page="reports">
-            <span class="nav-glyph">T</span>
-            <span><strong>Reports</strong><small>报告导出</small></span>
+            <span class="nav-glyph" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M7 4.5h7l3 3v12H7z" /><path d="M14 4.5v3h3" /><path d="M9.5 13h5" /><path d="M9.5 16h5" /></svg>
+            </span>
+            <span><strong data-i18n="navReports">报告导出</strong></span>
+          </button>
+          <button class="nav-item" data-page="settings">
+            <span class="nav-glyph" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M12 4.5v2" /><path d="M12 17.5v2" /><path d="M4.5 12h2" /><path d="M17.5 12h2" /><path d="M6.7 6.7l1.4 1.4" /><path d="M15.9 15.9l1.4 1.4" /><path d="M17.3 6.7l-1.4 1.4" /><path d="M8.1 15.9l-1.4 1.4" /></svg>
+            </span>
+            <span><strong data-i18n="navSettings">设置</strong></span>
           </button>
         </nav>
         <div class="sidebar-footer">
           <span class="status-dot" id="serverDot"></span>
-          <span id="serverStatus">checking server</span>
+          <span id="serverStatus">检查中</span>
         </div>
       </aside>
 
       <main class="main">
         <header class="topbar">
           <div>
-            <p class="eyebrow">Local small-model harness</p>
             <h2 id="pageTitle">运行总览</h2>
-            <p class="topbar-subtitle" id="profileLine">Ollama · no model selected</p>
+            <p class="topbar-subtitle" id="profileLine">Ollama · 未选模型</p>
           </div>
           <div class="topbar-actions">
-            <button class="ghost-button" id="refreshRunsBtn" title="刷新运行记录">刷新</button>
-            <button class="primary-button" id="quickHealthBtn" title="检查当前本地模型端点">端点检查</button>
+            <button class="ghost-button" id="refreshRunsBtn" title="刷新运行记录" data-i18n="actionRefresh" data-i18n-title="titleRefreshRuns">刷新</button>
+            <button class="primary-button" id="quickHealthBtn" title="检查当前本地模型端点" data-i18n="actionHealth" data-i18n-title="titleHealth">端点检查</button>
           </div>
         </header>
 
         <section class="page active" id="page-control">
-          <section class="dashboard-strip" aria-label="Harness status">
-            <div class="status-tile">
-              <span>Runtime</span>
-              <strong id="runtimeTile">Ollama</strong>
-            </div>
-            <div class="status-tile">
-              <span>Model</span>
-              <strong id="modelTile">Not selected</strong>
-            </div>
-            <div class="status-tile">
-              <span>Latest Eval</span>
-              <strong id="latestRunTile">No runs yet</strong>
-            </div>
-            <div class="status-tile warn-tile">
-              <span>Failure Hotspot</span>
-              <strong id="failureHotspotTile">None</strong>
-            </div>
-            <div class="status-tile action">
-              <span>Next Action</span>
-              <strong id="nextActionTile">Load models</strong>
-            </div>
-          </section>
-
           <section class="panel full scenario-panel">
             <div class="panel-head">
               <div>
-                <h3>内置场景</h3>
-                <p>先别从空白开始。选择一个小模型常见任务，直接加载到 Prompt 和 Eval。</p>
+                <h3 data-i18n="scenarioTitle">内置场景</h3>
               </div>
-              <span class="badge">product loop</span>
             </div>
             <div class="scenario-grid" id="scenarioGrid"></div>
           </section>
@@ -111,39 +106,38 @@
             <section class="panel">
               <div class="panel-head">
                 <div>
-                  <h3>模型端点</h3>
-                  <p>本地代理会转发到 Ollama、LM Studio、llama.cpp 或 OpenAI-compatible 服务。</p>
+                  <h3 data-i18n="endpointTitle">模型端点</h3>
                 </div>
                 <span class="badge" id="profileBadge">未连接</span>
               </div>
               <div class="form-grid">
                 <label>
-                  Provider
+                  <span data-i18n="fieldProvider">供应商</span>
                   <select id="providerInput">
-                    <option value="ollama">Ollama</option>
-                    <option value="lmstudio">LM Studio</option>
-                    <option value="llamacpp">llama.cpp server</option>
-                    <option value="openai">OpenAI-compatible</option>
-                    <option value="vllm">vLLM compatible</option>
+                    <option value="ollama" data-i18n="providerOllama">Ollama</option>
+                    <option value="lmstudio" data-i18n="providerLmStudio">LM Studio</option>
+                    <option value="llamacpp" data-i18n="providerLlamaCpp">llama.cpp 服务</option>
+                    <option value="openai" data-i18n="providerOpenAiCompat">OpenAI 兼容</option>
+                    <option value="vllm" data-i18n="providerVllmCompat">vLLM 兼容</option>
                   </select>
                 </label>
                 <label>
-                  Base URL
+                  <span data-i18n="fieldBaseUrl">地址</span>
                   <input id="baseUrlInput" type="url" spellcheck="false" />
                 </label>
                 <label>
-                  Model
+                  <span data-i18n="fieldModel">模型</span>
                   <input id="modelInput" list="modelList" spellcheck="false" placeholder="qwen2.5:1.5b" />
                   <datalist id="modelList"></datalist>
                 </label>
                 <label>
-                  API Key
+                  <span data-i18n="fieldApiKey">API 密钥</span>
                   <input id="apiKeyInput" type="password" spellcheck="false" placeholder="可选" />
                 </label>
               </div>
               <div class="button-row">
-                <button class="primary-button" id="loadModelsBtn">读取模型</button>
-                <button class="ghost-button" id="saveProfileBtn">保存配置</button>
+                <button class="primary-button" id="loadModelsBtn" data-i18n="actionLoadModels">读取模型</button>
+                <button class="ghost-button" id="saveProfileBtn" data-i18n="actionSaveProfile">保存配置</button>
               </div>
               <div class="model-list" id="modelsOutput"></div>
             </section>
@@ -151,34 +145,33 @@
             <section class="panel">
               <div class="panel-head">
                 <div>
-                  <h3>小模型默认约束</h3>
-                  <p>默认偏保守，适合 1B-3B 模型减少跑偏和上下文浪费。</p>
+                  <h3 data-i18n="paramsTitle">小模型默认约束</h3>
                 </div>
               </div>
               <div class="range-grid">
                 <label>
-                  Temperature
+                  <span data-i18n="fieldTemperature">温度</span>
                   <input id="temperatureInput" type="range" min="0" max="1.5" step="0.05" />
                   <output id="temperatureValue"></output>
                 </label>
                 <label>
-                  Top P
+                  <span data-i18n="fieldTopP">Top P</span>
                   <input id="topPInput" type="range" min="0.1" max="1" step="0.05" />
                   <output id="topPValue"></output>
                 </label>
                 <label>
-                  Max Tokens
+                  <span data-i18n="fieldMaxTokens">最大输出</span>
                   <input id="maxTokensInput" type="number" min="16" max="4096" step="16" />
                 </label>
                 <label>
-                  Context Tokens
+                  <span data-i18n="fieldContextTokens">上下文长度</span>
                   <input id="contextTokensInput" type="number" min="512" max="32768" step="512" />
                 </label>
               </div>
               <div class="hint-list">
-                <div><strong>Prompt:</strong> 角色短、任务短、输出格式硬约束。</div>
-                <div><strong>Swarm:</strong> 多角色串行比大模型自我反思更稳定，但轮数要少。</div>
-                <div><strong>Eval:</strong> 先用关键词/regex，本地小模型 judge 容易不稳定。</div>
+                <div><strong data-i18n="hintPromptLabel">提示词</strong>: <span data-i18n="hintPrompt">角色短、任务短、输出格式硬约束。</span></div>
+                <div><strong data-i18n="hintSwarmLabel">多角色</strong>: <span data-i18n="hintSwarm">多角色串行比大模型自我反思更稳定，但轮数要少。</span></div>
+                <div><strong data-i18n="hintEvalLabel">验收</strong>: <span data-i18n="hintEval">先用关键词/正则，本地小模型评审容易不稳定。</span></div>
               </div>
             </section>
           </div>
@@ -186,22 +179,21 @@
           <section class="panel full guide-panel">
             <div class="panel-head">
               <div>
-                <h3>推荐本地模型档位</h3>
-                <p>这里不绑定具体下载源，GUI 只要求本地服务暴露兼容接口。</p>
+                <h3 data-i18n="localTierTitle">推荐本地模型档位</h3>
               </div>
             </div>
             <div class="matrix">
               <div class="matrix-row matrix-head">
-                <span>档位</span><span>用途</span><span>运行策略</span><span>风险</span>
+                <span data-i18n="matrixTier">档位</span><span data-i18n="matrixUse">用途</span><span data-i18n="matrixStrategy">运行策略</span><span data-i18n="matrixRisk">风险</span>
               </div>
               <div class="matrix-row">
-                <span>1B-1.5B</span><span>分类、抽取、格式转换、轻量 routing</span><span>低温、短输出、强模板</span><span>复杂推理弱</span>
+                <span>1B-1.5B</span><span>分类、抽取、格式转换、轻量路由</span><span>低温、短输出、强模板</span><span>复杂推理弱</span>
               </div>
               <div class="matrix-row">
-                <span>2B-3B</span><span>短问答、代码片段、任务拆解、critic</span><span>2-3 个角色轮转</span><span>长上下文易漂移</span>
+                <span>2B-3B</span><span>短问答、代码片段、任务拆解、审校</span><span>2-3 个角色轮转</span><span>长上下文易漂移</span>
               </div>
               <div class="matrix-row">
-                <span>多模型</span><span>planner + solver + critic + synthesizer</span><span>每步压缩记忆</span><span>总延迟增加</span>
+                <span>多模型</span><span>规划 + 求解 + 审校 + 合成</span><span>每步压缩记忆</span><span>总延迟增加</span>
               </div>
             </div>
           </section>
@@ -212,35 +204,34 @@
             <section class="panel">
               <div class="panel-head">
                 <div>
-                  <h3>单模型调教</h3>
-                  <p>用于快速比较系统提示词、参数、输出格式和延迟。</p>
+                  <h3 data-i18n="promptTitle">单模型调教</h3>
                 </div>
-                <button class="ghost-button" id="loadPromptPresetBtn">填入小模型模板</button>
+                <button class="ghost-button" id="loadPromptPresetBtn" data-i18n="actionLoadPromptPreset">填入小模型模板</button>
               </div>
               <label class="stacked">
-                System
+                <span data-i18n="fieldSystem">系统提示词</span>
                 <textarea id="systemPromptInput" rows="5" spellcheck="false"></textarea>
               </label>
               <label class="stacked">
-                User
+                <span data-i18n="fieldUser">用户输入</span>
                 <textarea id="userPromptInput" rows="8" spellcheck="false"></textarea>
               </label>
               <div class="button-row">
-                <button class="primary-button" id="runPromptBtn">运行</button>
-                <button class="ghost-button" id="clearPromptBtn">清空输出</button>
+                <button class="primary-button" id="runPromptBtn" data-i18n="actionRun">运行</button>
+                <button class="ghost-button" id="clearPromptBtn" data-i18n="actionClearOutput">清空输出</button>
               </div>
             </section>
 
             <section class="panel output-panel">
               <div class="panel-head">
                 <div>
-                  <h3>输出</h3>
+                  <h3 data-i18n="outputTitle">输出</h3>
                   <p id="promptMeta">等待运行</p>
                 </div>
               </div>
               <div class="summary-card" id="promptSummary">
-                <span>Ready</span>
-                <strong>选择场景或直接运行 prompt。</strong>
+                <span data-i18n="statusReady">就绪</span>
+                <strong data-i18n="summaryPromptReady">选择场景或直接运行提示词。</strong>
               </div>
               <pre class="output" id="promptOutput"></pre>
             </section>
@@ -252,43 +243,42 @@
             <section class="panel">
               <div class="panel-head">
                 <div>
-                  <h3>小模型 Swarm</h3>
-                  <p>用短上下文多角色串行，让 1B-3B 模型承担可控子任务。</p>
+                  <h3 data-i18n="swarmTitle">多角色链路</h3>
                 </div>
-                <span class="badge">serial trace</span>
+                <span class="badge" data-i18n="badgeSerialTrace">串行轨迹</span>
               </div>
               <label class="stacked">
-                Task
+                <span data-i18n="fieldTask">任务</span>
                 <textarea id="swarmTaskInput" rows="6" spellcheck="false"></textarea>
               </label>
               <div class="form-grid compact">
                 <label>
-                  Rounds
+                  <span data-i18n="fieldRounds">轮数</span>
                   <input id="swarmRoundsInput" type="number" min="1" max="5" step="1" />
                 </label>
                 <label>
-                  Agent memory
+                  <span data-i18n="fieldAgentMemory">角色记忆</span>
                   <select id="swarmMemoryInput">
-                    <option value="compact">Compact last 10</option>
-                    <option value="minimal">Minimal</option>
+                    <option value="compact" data-i18n="optionCompactMemory">压缩最近 10 条</option>
+                    <option value="minimal" data-i18n="optionMinimalMemory">最少记忆</option>
                   </select>
                 </label>
               </div>
               <label class="inline-check">
                 <input id="swarmBaselineInput" type="checkbox" />
-                Compare with single-call baseline
+                <span data-i18n="checkboxSwarmBaseline">对比单次调用基线</span>
               </label>
               <div class="agent-table" id="agentTable"></div>
               <div class="button-row">
-                <button class="primary-button" id="runSwarmBtn">运行 Swarm</button>
-                <button class="ghost-button" id="resetAgentsBtn">重置角色</button>
+                <button class="primary-button" id="runSwarmBtn" data-i18n="actionRunSwarm">运行多角色</button>
+                <button class="ghost-button" id="resetAgentsBtn" data-i18n="actionResetAgents">重置角色</button>
               </div>
             </section>
 
             <section class="panel output-panel">
               <div class="panel-head">
                 <div>
-                  <h3>Swarm Trace</h3>
+                  <h3 data-i18n="swarmTraceTitle">多角色轨迹</h3>
                   <p id="swarmMeta">等待运行</p>
                 </div>
               </div>
@@ -302,40 +292,74 @@
             <section class="panel">
               <div class="panel-head">
                 <div>
-                  <h3>Eval Dataset</h3>
-                  <p>JSON 数组。支持 keywords、regex、exact 三种本地断言。</p>
+                  <h3 data-i18n="evalDatasetTitle">验收数据集</h3>
                 </div>
                 <div class="button-row">
-                  <button class="ghost-button" id="loadEvalPresetBtn">加载样例</button>
-                  <button class="ghost-button" id="importEvalPackBtn">导入 Pack</button>
-                  <button class="ghost-button" id="exportEvalPackBtn">导出 Pack</button>
+                  <button class="ghost-button" id="loadEvalPresetBtn" data-i18n="actionLoadSample">加载样例</button>
+                  <button class="ghost-button" id="importEvalPackBtn" data-i18n="actionImportPack">导入包</button>
+                  <button class="ghost-button" id="exportEvalPackBtn" data-i18n="actionExportPack">导出包</button>
                   <input id="evalPackFileInput" type="file" accept="application/json,.json" hidden />
                 </div>
               </div>
+              <div class="eval-config">
+                <div class="difficulty-field run-mode-field">
+                  <span data-i18n="fieldRunMode">模式</span>
+                  <div class="segmented-control run-mode-control" id="evalRunModeToggle" aria-label="模式" data-i18n-aria-label="fieldRunMode">
+                    <button type="button" data-run-mode="quick" data-i18n="runModeQuick">快速</button>
+                    <button type="button" data-run-mode="standard" data-i18n="runModeStandard">标准</button>
+                    <button type="button" data-run-mode="full" data-i18n="runModeFull">完整</button>
+                  </div>
+                </div>
+                <label>
+                  <span data-i18n="fieldEvalSuite">测试</span>
+                  <select id="evalSuiteInput"></select>
+                </label>
+                <label>
+                  <span data-i18n="fieldQuestionSet">题组</span>
+                  <select id="evalSetInput"></select>
+                </label>
+                <label>
+                  <span data-i18n="fieldCaseCount">题量</span>
+                  <select id="evalCaseLimitInput">
+                    <option value="3" data-i18n="caseCount3">3 题</option>
+                    <option value="5" data-i18n="caseCount5">5 题</option>
+                    <option value="10" data-i18n="caseCount10">10 题</option>
+                    <option value="all" data-i18n="caseCountAll">全部</option>
+                  </select>
+                </label>
+                <div class="difficulty-field">
+                  <span data-i18n="fieldDifficulty">难度</span>
+                  <div class="segmented-control difficulty-control" id="evalDifficultyToggle" aria-label="难度" data-i18n-aria-label="fieldDifficulty">
+                    <button type="button" data-difficulty="easy" data-i18n="difficultyEasy">低</button>
+                    <button type="button" data-difficulty="medium" data-i18n="difficultyMedium">中</button>
+                    <button type="button" data-difficulty="hard" data-i18n="difficultyHard">高</button>
+                  </div>
+                </div>
+              </div>
               <label class="stacked">
-                Default System
+                <span data-i18n="fieldDefaultSystem">默认系统提示词</span>
                 <textarea id="evalSystemInput" rows="3" spellcheck="false"></textarea>
               </label>
               <label class="stacked">
-                Cases JSON
+                <span data-i18n="fieldCasesJson">用例 JSON</span>
                 <textarea id="evalDatasetInput" class="code-input" rows="16" spellcheck="false"></textarea>
               </label>
               <div class="button-row">
-                <button class="primary-button" id="runEvalBtn">运行 Eval</button>
-                <button class="ghost-button" id="formatEvalBtn">格式化 JSON</button>
+                <button class="primary-button" id="runEvalBtn" data-i18n="actionRunEval">运行验收</button>
+                <button class="ghost-button" id="formatEvalBtn" data-i18n="actionFormatJson">格式化 JSON</button>
               </div>
             </section>
 
             <section class="panel output-panel">
               <div class="panel-head">
                 <div>
-                  <h3>Eval Result</h3>
+                  <h3 data-i18n="evalResultTitle">验收结果</h3>
                   <p id="evalMeta">等待运行</p>
                 </div>
               </div>
               <div class="summary-card" id="evalSummary">
-                <span>Ready</span>
-                <strong>加载场景后运行 Eval。</strong>
+                <span data-i18n="statusReady">就绪</span>
+                <strong data-i18n="summaryEvalReady">加载场景后运行验收。</strong>
               </div>
               <div class="eval-result" id="evalOutput"></div>
             </section>
@@ -346,24 +370,23 @@
           <section class="panel full">
             <div class="panel-head">
               <div>
-                <h3>运行记录</h3>
-                <p>保存在本项目的 data/runs.json，最多保留 500 条。原始数据用导出查看。</p>
+                <h3 data-i18n="runsTitle">运行记录</h3>
               </div>
-              <button class="danger-button" id="clearRunsBtn">清空记录</button>
+              <button class="danger-button" id="clearRunsBtn" data-i18n="actionClearRuns">清空记录</button>
             </div>
             <div class="form-grid compact runs-toolbar">
               <label>
-                Search
-                <input id="runsSearchInput" type="search" placeholder="model, title, tag, run id" />
+                <span data-i18n="fieldSearch">搜索</span>
+                <input id="runsSearchInput" type="search" placeholder="模型、标题、标签、运行 ID" data-i18n-placeholder="placeholderRunsSearch" />
               </label>
               <label>
-                Type
+                <span data-i18n="fieldType">类型</span>
                 <select id="runsTypeInput">
-                  <option value="all">All</option>
-                  <option value="chat">Chat</option>
-                  <option value="eval">Eval</option>
-                  <option value="swarm">Swarm</option>
-                  <option value="benchmark">Benchmark</option>
+                  <option value="all" data-i18n="optionAll">全部</option>
+                  <option value="chat" data-i18n="optionChat">对话</option>
+                  <option value="eval" data-i18n="optionEval">验收</option>
+                  <option value="swarm" data-i18n="optionSwarm">多角色</option>
+                  <option value="benchmark" data-i18n="optionBenchmark">测速</option>
                 </select>
               </label>
             </div>
@@ -375,23 +398,22 @@
           <section class="panel full">
             <div class="panel-head">
               <div>
-                <h3>Compare Eval Runs</h3>
-                <p>选择两次 Eval 运行，查看通过率、延迟、失败标签和 case 变化。</p>
+                <h3 data-i18n="compareTitle">前后对比</h3>
               </div>
-              <button class="ghost-button" id="refreshCompareBtn">刷新 Runs</button>
+              <button class="ghost-button" id="refreshCompareBtn" data-i18n="actionRefreshRuns">刷新运行</button>
             </div>
             <div class="form-grid compact">
               <label>
-                Baseline
+                <span data-i18n="fieldBaseline">基线</span>
                 <select id="compareRunA"></select>
               </label>
               <label>
-                Candidate
+                <span data-i18n="fieldCandidate">候选</span>
                 <select id="compareRunB"></select>
               </label>
             </div>
             <div class="button-row">
-              <button class="primary-button" id="runCompareBtn">比较</button>
+              <button class="primary-button" id="runCompareBtn" data-i18n="actionCompare">比较</button>
             </div>
             <div class="compare-output" id="compareOutput"></div>
           </section>
@@ -402,23 +424,21 @@
             <section class="panel">
               <div class="panel-head">
                 <div>
-                  <h3>Device Match</h3>
-                  <p>先看这台机器的大致运行条件。后续 run 会自动保存设备快照。</p>
+                  <h3 data-i18n="deviceTitle">设备匹配</h3>
                 </div>
-                <button class="ghost-button" id="refreshDeviceBtn">刷新设备</button>
+                <button class="ghost-button" id="refreshDeviceBtn" data-i18n="actionRefreshDevice">刷新设备</button>
               </div>
               <div class="device-grid" id="deviceOutput"></div>
             </section>
             <section class="panel">
               <div class="panel-head">
                 <div>
-                  <h3>Fit Hint</h3>
-                  <p>这是轻量建议，不替代真实跑分。先帮你判断小模型适合怎么试。</p>
+                  <h3 data-i18n="fitHintTitle">适配建议</h3>
                 </div>
               </div>
               <div class="summary-card" id="deviceFitSummary">
-                <span>Waiting</span>
-                <strong>刷新设备后显示建议。</strong>
+                <span data-i18n="statusWaiting">等待</span>
+                <strong data-i18n="summaryDeviceWaiting">刷新设备后显示建议。</strong>
               </div>
               <div class="hint-list" id="deviceHints"></div>
             </section>
@@ -427,45 +447,43 @@
             <section class="panel">
               <div class="panel-head">
                 <div>
-                  <h3>Runtime Memory</h3>
-                  <p>按 provider 探测本地运行时进程工作集。它是近似运行占用，不等于精确模型权重内存。</p>
+                  <h3 data-i18n="runtimeMemoryTitle">运行时内存</h3>
                 </div>
-                <button class="ghost-button" id="refreshRuntimeMemoryBtn">刷新内存</button>
+                <button class="ghost-button" id="refreshRuntimeMemoryBtn" data-i18n="actionRefreshMemory">刷新内存</button>
               </div>
               <div class="summary-card" id="runtimeMemorySummary">
-                <span>Waiting</span>
-                <strong>刷新后显示运行时进程内存占比。</strong>
+                <span data-i18n="statusWaiting">等待</span>
+                <strong data-i18n="summaryRuntimeWaiting">刷新后显示运行时进程内存占比。</strong>
               </div>
               <div class="runtime-process-list" id="runtimeProcessOutput"></div>
             </section>
             <section class="panel">
               <div class="panel-head">
                 <div>
-                  <h3>Generation Speed Test</h3>
-                  <p>非流式生成测速：latency、tokens/s、chars/s，并保存为 benchmark run。</p>
+                  <h3 data-i18n="benchmarkTitle">生成测速</h3>
                 </div>
-                <span class="badge">non-streaming</span>
+                <span class="badge" data-i18n="badgeNonStreaming">非流式</span>
               </div>
               <div class="form-grid compact">
                 <label>
-                  Runs
+                  <span data-i18n="fieldBenchmarkRuns">次数</span>
                   <input id="benchmarkRunsInput" type="number" min="1" max="10" step="1" value="3" />
                 </label>
                 <label>
-                  Max Tokens
+                  <span data-i18n="fieldBenchmarkMaxTokens">最大输出</span>
                   <input id="benchmarkMaxTokensInput" type="number" min="16" max="2048" step="16" value="256" />
                 </label>
               </div>
               <label class="inline-check">
                 <input id="benchmarkWarmupInput" type="checkbox" checked />
-                Warm up once before measuring
+                <span data-i18n="checkboxWarmup">测速前先预热一次</span>
               </label>
               <label class="stacked">
-                Prompt
+                <span data-i18n="fieldBenchmarkPrompt">测速提示词</span>
                 <textarea id="benchmarkPromptInput" rows="4" spellcheck="false"></textarea>
               </label>
               <div class="button-row">
-                <button class="primary-button" id="runBenchmarkBtn">运行测速</button>
+                <button class="primary-button" id="runBenchmarkBtn" data-i18n="actionRunBenchmark">运行测速</button>
               </div>
               <div class="benchmark-output" id="benchmarkOutput"></div>
             </section>
@@ -476,12 +494,32 @@
           <section class="panel full">
             <div class="panel-head">
               <div>
-                <h3>Reports</h3>
-                <p>从最近运行生成轻量报告。完整原始数据请导出 JSON。</p>
+                <h3 data-i18n="reportsTitle">报告导出</h3>
               </div>
-              <button class="ghost-button" id="refreshReportsBtn">刷新 Reports</button>
+              <button class="ghost-button" id="refreshReportsBtn" data-i18n="actionRefreshReports">刷新报告</button>
             </div>
             <div class="runs-list" id="reportsOutput"></div>
+          </section>
+        </section>
+
+        <section class="page" id="page-settings">
+          <section class="panel full settings-panel">
+            <div class="panel-head">
+              <div>
+                <h3 data-i18n="settingsTitle">设置</h3>
+              </div>
+            </div>
+            <div class="settings-list">
+              <div class="setting-row">
+                <div>
+                  <strong data-i18n="settingsLanguage">界面语言</strong>
+                </div>
+                <div class="segmented-control" id="languageToggle" aria-label="界面语言" data-i18n-aria-label="settingsLanguage">
+                  <button type="button" data-language="zh">中文</button>
+                  <button type="button" data-language="en">English</button>
+                </div>
+              </div>
+            </div>
           </section>
         </section>
       </main>

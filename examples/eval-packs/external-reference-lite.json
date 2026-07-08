@@ -1,0 +1,84 @@
+{
+  "name": "External Reference Lite Pack",
+  "version": "0.1.0",
+  "description": "Small importable reference subsets for MMLU-Pro, GSM8K, BBH, HumanEval, MBPP, and WildBench style checks.",
+  "taskProfile": "external_reference",
+  "recommendedModelSize": "1B-3B",
+  "system": "Answer in the requested compact format. Do not add explanation unless the case asks for it.",
+  "cases": [
+    {
+      "id": "external_mmlu_pro_lite_001",
+      "source": "MMLU-Pro-lite",
+      "suite": "external_reference",
+      "set": "MMLU-Pro-lite",
+      "family": "通识选择",
+      "difficulty": "easy",
+      "input": "只输出 A、B、C、D 之一：水在标准大气压下的沸点最接近？A 0C B 50C C 100C D 200C",
+      "check": "exact",
+      "expected": "C",
+      "maxReasonableChars": 8
+    },
+    {
+      "id": "external_gsm8k_lite_001",
+      "source": "GSM8K-lite",
+      "suite": "external_reference",
+      "set": "GSM8K-lite",
+      "family": "小学算术",
+      "difficulty": "medium",
+      "input": "只输出最终数字：每张票 12 元，买 4 张后优惠 10 元，总价是多少？",
+      "check": "exact",
+      "expected": "38",
+      "maxReasonableChars": 12
+    },
+    {
+      "id": "external_bbh_lite_001",
+      "source": "BBH-lite",
+      "suite": "external_reference",
+      "set": "BBH-lite",
+      "family": "逻辑判断",
+      "difficulty": "easy",
+      "input": "只输出 YES 或 NO：所有蓝色方块都是金属。这个物体是蓝色方块。它一定是金属吗？",
+      "check": "exact",
+      "expected": "YES",
+      "maxReasonableChars": 12
+    },
+    {
+      "id": "external_humaneval_lite_001",
+      "source": "HumanEval-lite",
+      "suite": "external_reference",
+      "set": "HumanEval-lite",
+      "family": "代码补全",
+      "difficulty": "easy",
+      "input": "只输出 JavaScript 函数体：function add(a, b) { /* return sum */ }",
+      "check": "regex",
+      "regex": "return\\s+a\\s*\\+\\s*b",
+      "expected": "return a + b",
+      "maxReasonableChars": 80
+    },
+    {
+      "id": "external_mbpp_lite_001",
+      "source": "MBPP-lite",
+      "suite": "external_reference",
+      "set": "MBPP-lite",
+      "family": "代码任务",
+      "difficulty": "easy",
+      "input": "只输出 Python 函数定义：square(n) 返回 n 的平方。",
+      "check": "regex",
+      "regex": "def\\s+square\\s*\\(\\s*n\\s*\\)[\\s\\S]*return\\s+n\\s*\\*\\s*n",
+      "expected": "def square(n): return n * n",
+      "maxReasonableChars": 120
+    },
+    {
+      "id": "external_wildbench_lite_001",
+      "source": "WildBench-lite",
+      "suite": "external_reference",
+      "set": "WildBench-lite",
+      "family": "开放问答",
+      "difficulty": "easy",
+      "input": "用户说：根据我上面发的论文总结结论。但当前没有论文内容。只输出 ASK_INFO。",
+      "check": "exact",
+      "expected": "ASK_INFO",
+      "maxReasonableChars": 16
+    }
+  ]
+}

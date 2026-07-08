@@ -585,8 +585,19 @@ function normalizeCase(testCase, index) {
         .filter(Boolean);
   return {
     id: String(testCase.id || `case_${index + 1}`),
+    suite: String(testCase.suite || ""),
+    set: String(testCase.set || ""),
+    difficulty: String(testCase.difficulty || ""),
     family: String(testCase.family || "general"),
     input: String(testCase.input || testCase.prompt || ""),
+    turns: Array.isArray(testCase.turns)
+      ? testCase.turns
+          .filter((turn) => turn && typeof turn === "object")
+          .map((turn) => ({
+            role: ["system", "user", "assistant"].includes(turn.role) ? turn.role : "user",
+            content: String(turn.content || "")
+          }))
+      : [],
     system: String(testCase.system || ""),
     expected,
     check: String(testCase.check || testCase.checkType || "keywords"),
@@ -595,10 +606,15 @@ function normalizeCase(testCase, index) {
     choices: Array.isArray(testCase.choices) ? testCase.choices : [],
     regex: String(testCase.regex || ""),
     schema: testCase.schema || null,
+    tools: Array.isArray(testCase.tools) ? testCase.tools : [],
     min: testCase.min ?? testCase.minimum,
     max: testCase.max ?? testCase.maximum,
     maxReasonableChars: testCase.max_reasonable_chars ?? testCase.maxReasonableChars
   };
+}
+
+function turnTranscript(turns) {
+  return (turns || []).map((turn) => `${turn.role}: ${turn.content}`).join("\n");
 }
 
 function cleanForExact(value) {
@@ -681,6 +697,41 @@ function validateSimpleSchema(value, schema, pathName = "$") {
   return errors;
 }
 
+function schemaFailureTags(errors) {
+  const tags = new Set();
+  for (const error of errors || []) {
+    if (error.includes(" is required")) tags.add("SCHEMA_REQUIRED_MISSING");
+    if (error.includes(" expected ")) tags.add("SCHEMA_TYPE_ERROR");
+    if (error.includes(" invalid enum value")) tags.add("INVALID_ENUM");
+    if (error.includes(" is not allowed")) tags.add("EXTRA_FIELD");
+  }
+  if (errors?.length && !tags.size) tags.add("SCHEMA_MISMATCH");
+  return Array.from(tags);
+}
+
+function toolSchemaFailureTags(errors) {
+  const tags = new Set();
+  for (const error of errors || []) {
+    if (error.includes(" is required")) tags.add("TOOL_ARGUMENT_MISSING");
+    if (error.includes(" expected ")) tags.add("TOOL_ARGUMENT_TYPE_ERROR");
+    if (error.includes(" invalid enum value")) tags.add("INVALID_ENUM");
+    if (error.includes(" is not allowed")) tags.add("EXTRA_FIELD");
+  }
+  if (errors?.length && !tags.size) tags.add("SCHEMA_MISMATCH");
+  return Array.from(tags);
+}
+
+function valuesEqual(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function expectedToolLabelTag(label) {
+  if (label === "ASK_INFO") return "TOOL_SHOULD_ASK_INFO";
+  if (label === "NO_CALL") return "TOOL_SHOULD_NOT_CALL";
+  if (label === "ESCALATE") return "SHOULD_ESCALATE";
+  return "INVALID_ENUM";
+}
+
 function outputDiagnostics(testCase, output, parsed) {
   const rawLength = String(output || "").length;
   const repeatedLineCount = countRepeatedLines(output);
@@ -696,7 +747,7 @@ function outputDiagnostics(testCase, output, parsed) {
 function scoreCase(testCase, output) {
   const normalizedOutput = output.toLowerCase();
   const check = testCase.check === "keywords" ? "contains_all" : testCase.check;
-  const parsed = check.startsWith("json") ? parseJsonOutput(output) : null;
+  const parsed = check.startsWith("json") || check === "tool_call" || check === "multi_turn" ? parseJsonOutput(output) : null;
   const diagnostics = outputDiagnostics(testCase, output, parsed);
   const failureTags = [];
   const breakdown = { format: 1, content: 1, loop: diagnostics.repeatedLineCount ? 0.6 : 1 };
@@ -772,7 +823,7 @@ function scoreCase(testCase, output) {
     }
     const schemaErrors = check === "json_schema" ? validateSimpleSchema(parsed.value, testCase.schema) : [];
     const passed = schemaErrors.length === 0;
-    if (!passed) failureTags.push("SCHEMA_MISMATCH");
+    if (!passed) failureTags.push("SCHEMA_MISMATCH", ...schemaFailureTags(schemaErrors));
     if (diagnostics.jsonTextLeakage) failureTags.push("TEXT_LEAKAGE");
     return {
       passed,
@@ -782,6 +833,134 @@ function scoreCase(testCase, output) {
       scoreBreakdown: { ...breakdown, format: 1, content: passed ? 1 : 0.5 },
       diagnostics,
       parsedOutput: parsed.value
+    };
+  }
+
+  if (check === "tool_call") {
+    const specialLabels = ["ASK_INFO", "NO_CALL", "ESCALATE"];
+    const expectedLabel = typeof testCase.expected === "string" && specialLabels.includes(testCase.expected)
+      ? testCase.expected
+      : "";
+
+    if (expectedLabel) {
+      const passed = cleanForExact(output) === cleanForExact(expectedLabel);
+      if (!passed) failureTags.push(expectedToolLabelTag(expectedLabel));
+      return {
+        passed,
+        score: passed ? 1 : parsed?.ok ? 0.2 : 0,
+        reason: passed ? `tool label: ${expectedLabel}` : `expected ${expectedLabel}`,
+        failureTags,
+        scoreBreakdown: { ...breakdown, tool: passed ? 1 : 0, content: passed ? 1 : 0 },
+        diagnostics,
+        parsedOutput: parsed?.ok ? parsed.value : null
+      };
+    }
+
+    if (!parsed.ok) {
+      failureTags.push("JSON_PARSE_ERROR");
+      return {
+        passed: false,
+        score: 0,
+        reason: `tool json parse: ${parsed.error}`,
+        failureTags,
+        scoreBreakdown: { ...breakdown, format: 0, tool: 0, content: 0 },
+        diagnostics,
+        parsedOutput: null
+      };
+    }
+
+    const value = parsed.value;
+    const expectedTool = String(testCase.expected?.tool || "");
+    const expectedArguments = testCase.expected?.arguments || {};
+    const actualTool = String(value?.tool || "");
+    const actualArguments = value?.arguments;
+    const toolSpec = testCase.tools.find((tool) => tool.name === expectedTool);
+    const toolErrors = [];
+
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      failureTags.push("SCHEMA_MISMATCH");
+      toolErrors.push("tool output must be an object");
+    }
+    if (actualTool !== expectedTool) {
+      failureTags.push("TOOL_NAME_INVALID");
+      toolErrors.push(`expected tool ${expectedTool}, got ${actualTool || "missing"}`);
+    }
+    if (!actualArguments || typeof actualArguments !== "object" || Array.isArray(actualArguments)) {
+      failureTags.push("TOOL_ARGUMENT_TYPE_ERROR");
+      toolErrors.push("arguments must be an object");
+    } else {
+      const schemaErrors = validateSimpleSchema(actualArguments, toolSpec?.parameters);
+      failureTags.push(...toolSchemaFailureTags(schemaErrors));
+      toolErrors.push(...schemaErrors);
+      for (const [key, expectedValue] of Object.entries(expectedArguments)) {
+        if (!Object.prototype.hasOwnProperty.call(actualArguments, key)) {
+          failureTags.push("TOOL_ARGUMENT_MISSING");
+          toolErrors.push(`arguments.${key} is required`);
+        } else if (!valuesEqual(actualArguments[key], expectedValue)) {
+          failureTags.push("SCHEMA_MISMATCH");
+          toolErrors.push(`arguments.${key} expected ${JSON.stringify(expectedValue)}, got ${JSON.stringify(actualArguments[key])}`);
+        }
+      }
+    }
+    if (diagnostics.jsonTextLeakage) failureTags.push("TEXT_LEAKAGE");
+
+    const uniqueTags = Array.from(new Set(failureTags));
+    const passed = uniqueTags.length === 0;
+    const score = passed ? 1 : Math.max(0, Number((1 - uniqueTags.length * 0.2).toFixed(2)));
+    return {
+      passed,
+      score,
+      reason: passed ? "tool call valid" : toolErrors.join("; "),
+      failureTags: uniqueTags,
+      scoreBreakdown: { ...breakdown, format: 1, tool: passed ? 1 : score, content: passed ? 1 : score },
+      diagnostics,
+      parsedOutput: value
+    };
+  }
+
+  if (check === "multi_turn") {
+    if (testCase.schema) {
+      if (!parsed.ok) {
+        failureTags.push("JSON_PARSE_ERROR", "MULTI_TURN_DRIFT");
+        return {
+          passed: false,
+          score: 0,
+          reason: `multi-turn json parse: ${parsed.error}`,
+          failureTags,
+          scoreBreakdown: { ...breakdown, format: 0, content: 0, instruction: 0 },
+          diagnostics,
+          parsedOutput: null
+        };
+      }
+      const schemaErrors = validateSimpleSchema(parsed.value, testCase.schema);
+      const passed = schemaErrors.length === 0;
+      if (!passed) failureTags.push("MULTI_TURN_DRIFT", "CONSTRAINT_FORGOTTEN", ...schemaFailureTags(schemaErrors));
+      if (diagnostics.jsonTextLeakage) failureTags.push("TEXT_LEAKAGE");
+      return {
+        passed,
+        score: passed ? 1 : 0.4,
+        reason: passed ? "multi-turn constraints kept" : schemaErrors.join("; "),
+        failureTags: Array.from(new Set(failureTags)),
+        scoreBreakdown: { ...breakdown, format: parsed.ok ? 1 : 0, content: passed ? 1 : 0.4, instruction: passed ? 1 : 0 },
+        diagnostics,
+        parsedOutput: parsed.value
+      };
+    }
+
+    const choices = testCase.choices.length ? testCase.choices : [];
+    const cleanOutput = String(output).trim().replace(/^["']|["']$/g, "");
+    const passed = choices.length
+      ? choices.some((choice) => cleanForExact(cleanOutput) === cleanForExact(choice)) &&
+          cleanForExact(cleanOutput) === cleanForExact(testCase.expected)
+      : cleanForExact(cleanOutput) === cleanForExact(testCase.expected);
+    if (!passed) failureTags.push("MULTI_TURN_DRIFT", "CONSTRAINT_FORGOTTEN");
+    return {
+      passed,
+      score: passed ? 1 : 0,
+      reason: choices.length ? `multi-turn enum: ${choices.join(", ")}` : "multi-turn exact match",
+      failureTags: Array.from(new Set(failureTags)),
+      scoreBreakdown: { ...breakdown, content: passed ? 1 : 0, instruction: passed ? 1 : 0 },
+      diagnostics
     };
   }
 
@@ -967,39 +1146,133 @@ async function runBenchmark(input) {
 async function runEval(input) {
   const profile = getProfile(input.profile || {});
   const params = cleanParams(input.params || {});
-  const dataset = Array.isArray(input.dataset) ? input.dataset.map(normalizeCase) : [];
+  const dataset = normalizeEvalDataset(input.dataset);
   const defaultSystem = String(input.system || "You are a precise assistant. Keep answers short.");
+  const runConfig = normalizeRunConfig(input.runConfig || {});
   if (!dataset.length) throw badRequest("Dataset is empty");
 
   const startedAt = Date.now();
   const cases = [];
   for (const [index, item] of dataset.entries()) {
-    const testCase = normalizeCase(item, index);
-    if (!testCase.input.trim()) continue;
-    const result = await chatCompletion({
-      profile,
-      params,
-      messages: [
-        { role: "system", content: testCase.system || defaultSystem },
-        { role: "user", content: testCase.input }
-      ]
-    });
-    const score = scoreCase(testCase, result.text);
-    cases.push({
-      id: testCase.id,
-      family: testCase.family,
-      check: testCase.check,
-      input: testCase.input,
-      expected: testCase.expected,
-      output: result.text,
-      latencyMs: result.latencyMs,
-      ...score
-    });
+    cases.push(await runEvalCase({ profile, params, defaultSystem, item, index }));
   }
 
+  const summary = withRunConfig(summarizeEvalCases(cases, startedAt), runConfig);
+
+  const run = appendRun({
+    type: "eval",
+    title: `Eval ${summary.passed}/${summary.total}`,
+    profile: publicProfile(profile),
+    params,
+    summary,
+    result: { cases, runConfig }
+  });
+
+  return { runId: run.id, summary, cases };
+}
+
+function normalizeEvalDataset(dataset) {
+  return (Array.isArray(dataset) ? dataset : [])
+    .map(normalizeCase)
+    .filter((item) => item.input.trim() || item.turns.length);
+}
+
+function normalizeRunConfig(config) {
+  return {
+    runMode: String(config?.runMode || ""),
+    configLabel: String(config?.configLabel || ""),
+    benchmarkClasses: Array.isArray(config?.benchmarkClasses)
+      ? config.benchmarkClasses.map((item) => String(item)).filter(Boolean)
+      : []
+  };
+}
+
+function withRunConfig(summary, runConfig) {
+  if (!runConfig?.runMode && !runConfig?.configLabel && !runConfig?.benchmarkClasses?.length) return summary;
+  return {
+    ...summary,
+    runMode: runConfig.runMode || summary.runMode,
+    configLabel: runConfig.configLabel || summary.configLabel,
+    benchmarkClasses: runConfig.benchmarkClasses?.length ? runConfig.benchmarkClasses : summary.benchmarkClasses
+  };
+}
+
+function caseClassKey(item) {
+  return item.suite || item.family || item.check || "general";
+}
+
+function caseClassLabel(key) {
+  return SUITE_LABELS[key] || key;
+}
+
+function caseClassSummaries(cases) {
+  const groups = new Map();
+  for (const item of cases || []) {
+    const key = caseClassKey(item);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(item);
+  }
+  return Array.from(groups.entries()).map(([key, items]) => {
+    const total = items.length;
+    const passed = items.filter((item) => item.passed).length;
+    const avgScore = total ? items.reduce((sum, item) => sum + Number(item.score || 0), 0) / total : 0;
+    const failureTagCounts = {};
+    for (const item of items) {
+      for (const tag of item.failureTags || []) {
+        failureTagCounts[tag] = (failureTagCounts[tag] || 0) + 1;
+      }
+    }
+    return {
+      key,
+      label: caseClassLabel(key),
+      total,
+      passed,
+      failed: total - passed,
+      passRate: total ? passed / total : 0,
+      avgScore,
+      failureTagCounts
+    };
+  });
+}
+
+async function runEvalCase({ profile, params, defaultSystem, item, index }) {
+  const testCase = normalizeCase(item, index);
+  const messages = testCase.turns.length
+    ? [
+        { role: "system", content: testCase.system || defaultSystem },
+        ...testCase.turns
+      ]
+    : [
+        { role: "system", content: testCase.system || defaultSystem },
+        { role: "user", content: testCase.input }
+      ];
+  const result = await chatCompletion({
+    profile,
+    params,
+    messages
+  });
+  const score = scoreCase(testCase, result.text);
+  return {
+    id: testCase.id,
+    suite: testCase.suite,
+    set: testCase.set,
+    difficulty: testCase.difficulty,
+    family: testCase.family,
+    check: testCase.check,
+    input: testCase.turns.length ? turnTranscript(testCase.turns) : testCase.input,
+    turns: testCase.turns,
+    expected: testCase.expected,
+    output: result.text,
+    latencyMs: result.latencyMs,
+    ...score
+  };
+}
+
+function summarizeEvalCases(cases, startedAt) {
   const total = cases.length;
   const passed = cases.filter((item) => item.passed).length;
   const avgScore = total ? cases.reduce((sum, item) => sum + item.score, 0) / total : 0;
+  const avgCaseLatencyMs = total ? Math.round(cases.reduce((sum, item) => sum + Number(item.latencyMs || 0), 0) / total) : 0;
   const failureTagCounts = {};
   for (const item of cases) {
     for (const tag of item.failureTags || []) {
@@ -1008,24 +1281,79 @@ async function runEval(input) {
   }
   const summary = {
     total,
+    completed: total,
     passed,
     failed: total - passed,
     passRate: total ? passed / total : 0,
     avgScore,
+    avgCaseLatencyMs,
+    classScores: caseClassSummaries(cases),
     failureTagCounts,
     latencyMs: Date.now() - startedAt
   };
+  return summary;
+}
 
-  const run = appendRun({
-    type: "eval",
-    title: `Eval ${passed}/${total}`,
-    profile: publicProfile(profile),
-    params,
-    summary,
-    result: { cases }
+async function streamEval(input, res) {
+  const profile = getProfile(input.profile || {});
+  const params = cleanParams(input.params || {});
+  const dataset = normalizeEvalDataset(input.dataset);
+  const defaultSystem = String(input.system || "You are a precise assistant. Keep answers short.");
+  const runConfig = normalizeRunConfig(input.runConfig || {});
+  if (!dataset.length) throw badRequest("Dataset is empty");
+
+  const startedAt = Date.now();
+  const cases = [];
+  const writeEvent = (payload) => {
+    res.write(`${JSON.stringify(payload)}\n`);
+  };
+
+  res.writeHead(200, {
+    "content-type": "application/x-ndjson; charset=utf-8",
+    "cache-control": "no-store",
+    "x-accel-buffering": "no"
+  });
+  writeEvent({
+    type: "start",
+    total: dataset.length,
+    startedAt: new Date(startedAt).toISOString(),
+    profile: publicProfile(profile)
   });
 
-  return { runId: run.id, summary, cases };
+  try {
+    for (const [index, item] of dataset.entries()) {
+      const caseResult = await runEvalCase({ profile, params, defaultSystem, item, index });
+      cases.push(caseResult);
+      writeEvent({
+        type: "case",
+        index: cases.length,
+        total: dataset.length,
+        case: caseResult,
+        summary: summarizeEvalCases(cases, startedAt)
+      });
+    }
+
+    const summary = withRunConfig(summarizeEvalCases(cases, startedAt), runConfig);
+    const run = appendRun({
+      type: "eval",
+      title: `Eval ${summary.passed}/${summary.total}`,
+      profile: publicProfile(profile),
+      params,
+      summary,
+      result: { cases, runConfig }
+    });
+
+    writeEvent({ type: "done", runId: run.id, summary, cases });
+    res.end();
+  } catch (error) {
+    writeEvent({
+      type: "error",
+      error: error.message || "Eval failed",
+      summary: summarizeEvalCases(cases, startedAt),
+      cases
+    });
+    res.end();
+  }
 }
 
 function serveStatic(req, res, pathname) {
@@ -1081,12 +1409,52 @@ function formatPercent(value) {
   return `${Math.round(Number(value || 0) * 100)}%`;
 }
 
+const SUITE_LABELS = {
+  json_extraction: "JSON / 结构化输出",
+  intent_routing: "意图路由",
+  instruction_following: "指令跟随",
+  tool_calling: "工具调用",
+  safety_boundary: "边界处理",
+  loop_stress: "循环压力",
+  truthfulness: "真实性 / 幻觉风险",
+  multi_turn: "多轮对话 / 记忆保持"
+};
+
+function markdownValue(value) {
+  if (value === undefined || value === null) return "";
+  if (typeof value === "string") return value;
+  return JSON.stringify(value, null, 2);
+}
+
+function markdownCell(value) {
+  return String(value ?? "")
+    .replaceAll("|", "\\|")
+    .replace(/\r?\n/g, " ");
+}
+
+function markdownFence(value, lang = "text") {
+  return [`\`\`\`${lang}`, markdownValue(value), "```"].join("\n");
+}
+
+function scorePercent(value) {
+  return Math.round(Number(value || 0) * 100);
+}
+
 function generateMarkdownReport(run) {
   const summary = run.summary || {};
   const profile = run.profile || {};
   const device = run.device || {};
   const cases = run.result?.cases || [];
   const benchmarkRuns = run.result?.runs || [];
+  const runConfig = run.result?.runConfig || {};
+  const classScores = summary.classScores?.length ? summary.classScores : caseClassSummaries(cases);
+  const benchmarkClasses = summary.benchmarkClasses?.length
+    ? summary.benchmarkClasses
+    : runConfig.benchmarkClasses?.length
+      ? runConfig.benchmarkClasses
+      : classScores.map((item) => item.label);
+  const runMode = summary.runMode || runConfig.runMode || "n/a";
+  const configLabel = summary.configLabel || runConfig.configLabel || "";
   const benchmarkSection = run.type === "benchmark"
     ? [
         "## Benchmark",
@@ -1103,30 +1471,63 @@ function generateMarkdownReport(run) {
         ""
       ].join("\n")
     : "";
-  const failedCases = cases.filter((item) => !item.passed).slice(0, 5);
   const tags = Object.entries(summary.failureTagCounts || {})
     .map(([tag, count]) => `- ${tag}: ${count}`)
     .join("\n") || "- None";
-  const failed = failedCases
+  const classTable = classScores.length
+    ? [
+        "| Class | Score | Passed | Failure tags |",
+        "| --- | ---: | ---: | --- |",
+        ...classScores.map((item) => {
+          const topTags = Object.entries(item.failureTagCounts || {})
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 4)
+            .map(([tag, count]) => `${tag} ${count}`)
+            .join(", ") || "none";
+          return `| ${markdownCell(item.label)} | ${scorePercent(item.avgScore)} | ${item.passed}/${item.total} | ${markdownCell(topTags)} |`;
+        })
+      ].join("\n")
+    : "No class summary.";
+  const caseTable = cases.length
+    ? [
+        "| Case | Class | Family | Score | Result | Tags |",
+        "| --- | --- | --- | ---: | --- | --- |",
+        ...cases.map((item) => `| ${markdownCell(item.id)} | ${markdownCell(caseClassLabel(caseClassKey(item)))} | ${markdownCell(item.family)} | ${scorePercent(item.score)} | ${item.passed ? "PASS" : "FAIL"} | ${markdownCell((item.failureTags || []).join(", ") || "none")} |`)
+      ].join("\n")
+    : "No cases.";
+  const caseDetails = cases
     .map((item) => [
       `### ${item.id}`,
       "",
+      `- Class: ${caseClassLabel(caseClassKey(item))}`,
+      `- Set: ${item.set || "n/a"}`,
+      `- Difficulty: ${item.difficulty || "n/a"}`,
       `- Passed: ${item.passed ? "yes" : "no"}`,
-      `- Score: ${Math.round(Number(item.score || 0) * 100)}%`,
+      `- Score: ${scorePercent(item.score)}`,
+      `- Check: ${item.check || ""}`,
+      `- Latency: ${item.latencyMs || 0}ms`,
       `- Reason: ${item.reason || ""}`,
       `- Failure tags: ${(item.failureTags || []).join(", ") || "none"}`,
       "",
-      "Input:",
+      "#### Input / Turns",
       "",
-      "```text",
-      item.input || "",
-      "```",
+      markdownFence(item.turns?.length ? item.turns : item.input || "", item.turns?.length ? "json" : "text"),
       "",
-      "Output:",
+      "#### Expected",
       "",
-      "```text",
-      item.output || "",
-      "```"
+      markdownFence(item.expected, typeof item.expected === "string" ? "text" : "json"),
+      "",
+      "#### Raw Output",
+      "",
+      markdownFence(item.output || "", "text"),
+      "",
+      "#### Parsed Output",
+      "",
+      markdownFence(item.parsedOutput, "json"),
+      "",
+      "#### Diagnostics",
+      "",
+      markdownFence(item.diagnostics, "json")
     ].join("\n"))
     .join("\n\n");
 
@@ -1137,6 +1538,8 @@ function generateMarkdownReport(run) {
     `Created: ${run.createdAt}`,
     `Type: ${run.type}`,
     `Title: ${run.title || ""}`,
+    `Run mode: ${runMode}`,
+    configLabel ? `Config: ${configLabel}` : "",
     "",
     "## Runtime",
     "",
@@ -1156,18 +1559,28 @@ function generateMarkdownReport(run) {
     "",
     `- Passed: ${summary.passed ?? "n/a"}/${summary.total ?? "n/a"}`,
     `- Pass rate: ${formatPercent(summary.passRate)}`,
-    `- Average score: ${formatPercent(summary.avgScore)}`,
+    `- Average score: ${scorePercent(summary.avgScore)} 分`,
     `- Latency: ${summary.latencyMs || 0}ms`,
+    `- Avg case latency: ${summary.avgCaseLatencyMs || 0}ms`,
+    `- Benchmark classes: ${benchmarkClasses.join(", ") || "n/a"}`,
     "",
     benchmarkSection,
+    "## Per-Class Score",
+    "",
+    classTable,
+    "",
+    "## Per-Case Score",
+    "",
+    caseTable,
+    "",
     "## Failure Tags",
     "",
     tags,
     "",
-    failedCases.length ? "## Failed Cases" : "## Cases",
+    "## Case Details",
     "",
-    failedCases.length ? failed : "No failed cases recorded in this run."
-  ].join("\n");
+    caseDetails || "No cases recorded in this run."
+  ].filter((line) => line !== "").join("\n");
 }
 
 function csvEscape(value) {
@@ -1285,6 +1698,11 @@ async function handleApi(req, res, pathname) {
 
     if (pathname === "/api/eval") {
       sendJson(res, 200, await runEval(body));
+      return;
+    }
+
+    if (pathname === "/api/eval/stream") {
+      await streamEval(body, res);
       return;
     }
 
