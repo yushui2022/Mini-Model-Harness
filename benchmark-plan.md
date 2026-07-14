@@ -187,6 +187,7 @@ numeric_range
 tool_call
 instruction_following
 multi_turn
+llm_rubric
 ```
 
 Do not implement every value at once. Add only what the current milestone needs.
@@ -741,6 +742,35 @@ Definition of done:
 - They do not become primary navigation.
 - UI labels them as external/reference packs.
 
+### Milestone 9: Optional Model Judge V1
+
+Status: complete
+
+Depends on: Milestone 8
+
+Primary files:
+- `server.js`
+- `public/app.js`
+- `public/index.html`
+- `public/styles.css`
+- `README.md`
+
+Requirement:
+- Keep deterministic scoring as the default.
+- Add `POST /api/judge` for absolute rubric scoring through Ollama or OpenAI-compatible endpoints.
+- Add Rules / Mixed scoring in Eval.
+- Support judge scope: subjective cases, rule failures, or all cases.
+- Persist judge model, rubric version, weight, threshold, evidence, and confidence without persisting the API key.
+- A judge score must not override an objective rule failure.
+- `json_schema` and multi-turn JSON checks must compare expected field values, not schema alone.
+
+Definition of done:
+- A local mock judge returns a structured score and evidence.
+- A wrong JSON field emits `EXPECTED_VALUE_MISMATCH` even when schema passes.
+- Mixed scoring shows rule, judge, and final scores per case.
+- Desktop 1366px and mobile 390px have no horizontal overflow.
+- Markdown, JSON, and CSV exports include judge data.
+
 ## UX Acceptance Criteria
 
 - A case result appears immediately after that case finishes.
@@ -810,3 +840,6 @@ npm run check
 - 2026-07-08: Completed Milestone 7. Markdown reports now include run mode, benchmark classes, per-class score table, per-case score table, failure tags, raw output, parsed output, and diagnostics. Compare view now shows total score delta, pass delta, per-class deltas, fixed cases, regressed cases, new failure tags, changed outputs, and can export a comparison Markdown report.
 - 2026-07-08: Next execution starts at Milestone 8: optional external/reference benchmark packs, kept secondary to the core product UI.
 - 2026-07-08: Completed Milestone 8. Added manual-only 外部参考包 with MMLU-Pro-lite, GSM8K-lite, BBH-lite, HumanEval-lite, MBPP-lite, and WildBench-lite sets. Added `examples/eval-packs/external-reference-lite.json` for importable subset format. Verified external packs stay out of 标准 and 完整 default run modes, with Playwright desktop/mobile checks and no horizontal overflow.
+- 2026-07-11: Completed Milestone 9. Added optional absolute model judging through `/api/judge`, Rules / Mixed Eval scoring, configurable judge scope/weight/threshold/rubric, session-only judge API keys, per-case judge evidence, and judge-aware exports. Fixed JSON and multi-turn expected-value scoring so schema-valid but incorrect business values fail with `EXPECTED_VALUE_MISMATCH`. Verified with a local mock judge and Playwright desktop/mobile checks.
+- 2026-07-11: Completed an enterprise UI restructuring without changing benchmark scoring contracts. Benchmark classes now live in a dedicated Benchmark Library, Eval defaults to product-level configuration controls with raw JSON under Advanced Configuration, the dashboard reads real runs and failure tags, and runtime settings no longer occupy the first page. Reverified the mixed Judge flow, `EXPECTED_VALUE_MISMATCH`, per-case Judge details, session-only API keys, desktop layout, and the 390px mobile drawer.
+- 2026-07-11: Promoted local runtime connection back into the Dashboard as the first operational workflow without restoring the old settings-heavy layout. Users can select Ollama, LM Studio, llama.cpp, vLLM, or OpenAI-compatible runtimes, edit the endpoint, detect exposed models, and select one in place. Added NDJSON generation benchmark streaming so warmup, every completed speed sample, partial TPS/latency, progress, and live system memory appear before the final run is saved. The Device benchmark uses the same stream. Verified an intermediate `1/3` UI state before completion, final `3/3`, saved model selection, desktop 1440px, and mobile 390px.

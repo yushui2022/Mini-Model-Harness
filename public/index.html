@@ -3,37 +3,80 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>小模型调教台</title>
+    <meta name="description" content="面向 1B-3B 本地模型的评测、测试与部署适配工作台。" />
+    <meta name="theme-color" content="#f5f6f7" />
+    <title>Mini Model Lab</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
+    <a class="skip-link" href="#mainContent" data-i18n="skipMain">跳到主要内容</a>
     <div class="app-shell">
-      <aside class="sidebar">
+      <div class="sidebar-scrim" id="sidebarScrim" aria-hidden="true"></div>
+      <aside class="sidebar" id="appSidebar">
         <div class="brand">
-          <div class="brand-mark">MH</div>
-          <div>
-            <h1 data-i18n="brandTitle">小模型调教台</h1>
+          <div class="brand-mark" aria-hidden="true">
+            <svg class="brand-symbol" viewBox="0 0 48 48" fill="none">
+              <path d="M24 6.5 38 14.5v19L24 41.5 10 33.5v-19L24 6.5Z" fill="#174A3D" />
+              <path d="M24 6.5 38 14.5 24 22.5 10 14.5 24 6.5Z" fill="#82BDA7" />
+              <path d="m24 22.5 14-8v19L24 41.5v-19Z" fill="#2C6B59" />
+              <path d="m24 15.7 6.8 3.9v8.8L24 32.3l-6.8-3.9v-8.8l6.8-3.9Z" fill="#F8FBFA" />
+              <path d="m24 22.5 6.8-3.9v9.8L24 32.3v-9.8Z" fill="#D7E9E1" />
+            </svg>
           </div>
+          <div class="brand-copy">
+            <h1 data-i18n="brandTitle">Mini Model Lab</h1>
+          </div>
+          <button class="icon-button sidebar-close" id="sidebarCloseBtn" type="button" title="关闭导航" aria-label="关闭导航" data-i18n-title="titleCloseNav" data-i18n-aria-label="titleCloseNav">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+          </button>
         </div>
         <nav class="nav" aria-label="主导航" data-i18n-aria-label="navAria">
-          <div class="nav-section" data-i18n="navRun">运行</div>
+          <div class="nav-section" data-i18n="navWorkspace">工作台</div>
           <button class="nav-item active" data-page="control">
             <span class="nav-glyph" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M4 13.5h5v6H4z" /><path d="M10 4.5h5v15h-5z" /><path d="M16 9h4v10.5h-4z" /></svg>
             </span>
             <span><strong data-i18n="navDashboard">运行总览</strong></span>
           </button>
-          <button class="nav-item" data-page="lab">
-            <span class="nav-glyph" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M4 6.5h16" /><path d="M4 12h10" /><path d="M4 17.5h7" /><path d="M17 15l3 3" /><path d="M20 15l-3 3" /></svg>
-            </span>
-            <span><strong data-i18n="navPrompt">单模型调教</strong></span>
-          </button>
           <button class="nav-item" data-page="eval">
             <span class="nav-glyph" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M5 4.5h14v15H5z" /><path d="M8 9l2.2 2.2L14 7.4" /><path d="M8 15h8" /></svg>
             </span>
-            <span><strong data-i18n="navEval">输出验收</strong></span>
+            <span><strong data-i18n="navEval">发起验收</strong></span>
+          </button>
+          <button class="nav-item" data-page="lab">
+            <span class="nav-glyph" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 6.5h16" /><path d="M4 12h10" /><path d="M4 17.5h7" /><path d="M17 15l3 3" /><path d="M20 15l-3 3" /></svg>
+            </span>
+            <span><strong data-i18n="navPrompt">单模型测试</strong></span>
+          </button>
+          <button class="nav-item" data-page="swarm">
+            <span class="nav-glyph" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M5 7h4v4H5z" /><path d="M15 7h4v4h-4z" /><path d="M10 15h4v4h-4z" /><path d="M9 9h6" /><path d="m17 11-4 4" /><path d="m7 11 4 4" /></svg>
+            </span>
+            <span><strong data-i18n="navSwarm">工作流实验</strong></span>
+          </button>
+
+          <div class="nav-section" data-i18n="navAssets">资产</div>
+          <button class="nav-item" data-page="benchmarks">
+            <span class="nav-glyph" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M5 4.5h14v15H5z" /><path d="M8 8h8" /><path d="M8 12h8" /><path d="M8 16h5" /></svg>
+            </span>
+            <span><strong data-i18n="navBenchmarks">基准库</strong></span>
+          </button>
+          <button class="nav-item" data-page="models">
+            <span class="nav-glyph" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M6 7.5h12" /><path d="M6 12h12" /><path d="M6 16.5h12" /><path d="M4.5 5.5h15v13h-15z" /></svg>
+            </span>
+            <span><strong data-i18n="navModels">模型库</strong></span>
+          </button>
+
+          <div class="nav-section" data-i18n="navAnalysis">分析</div>
+          <button class="nav-item" data-page="runs">
+            <span class="nav-glyph" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M6 5h12v14H6z" /><path d="M9 9h6" /><path d="M9 13h6" /><path d="M9 17h3" /></svg>
+            </span>
+            <span><strong data-i18n="navRuns">运行记录</strong></span>
           </button>
           <button class="nav-item" data-page="compare">
             <span class="nav-glyph" aria-hidden="true">
@@ -41,31 +84,19 @@
             </span>
             <span><strong data-i18n="navCompare">前后对比</strong></span>
           </button>
-          <div class="nav-section" data-i18n="navLocal">本机</div>
-          <button class="nav-item" data-page="device">
-            <span class="nav-glyph" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M5 6h14v9H5z" /><path d="M9 19h6" /><path d="M12 15v4" /></svg>
-            </span>
-            <span><strong data-i18n="navDevice">设备匹配</strong></span>
-          </button>
-          <button class="nav-item" data-page="swarm">
-            <span class="nav-glyph" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="2.4" /><circle cx="6.5" cy="16.5" r="2.4" /><circle cx="17.5" cy="16.5" r="2.4" /><path d="M10.8 8.1 7.8 14" /><path d="M13.2 8.1 16.2 14" /><path d="M9 16.5h6" /></svg>
-            </span>
-            <span><strong data-i18n="navSwarm">多角色链路</strong></span>
-          </button>
-          <div class="nav-section" data-i18n="navRecords">记录</div>
-          <button class="nav-item" data-page="runs">
-            <span class="nav-glyph" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M6 5h12v14H6z" /><path d="M9 9h6" /><path d="M9 13h6" /><path d="M9 17h3" /></svg>
-            </span>
-            <span><strong data-i18n="navRuns">历史运行</strong></span>
-          </button>
           <button class="nav-item" data-page="reports">
             <span class="nav-glyph" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M7 4.5h7l3 3v12H7z" /><path d="M14 4.5v3h3" /><path d="M9.5 13h5" /><path d="M9.5 16h5" /></svg>
             </span>
             <span><strong data-i18n="navReports">报告导出</strong></span>
+          </button>
+
+          <div class="nav-section" data-i18n="navSystem">系统</div>
+          <button class="nav-item" data-page="device">
+            <span class="nav-glyph" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M5 6h14v9H5z" /><path d="M9 19h6" /><path d="M12 15v4" /></svg>
+            </span>
+            <span><strong data-i18n="navDevice">设备与性能</strong></span>
           </button>
           <button class="nav-item" data-page="settings">
             <span class="nav-glyph" aria-hidden="true">
@@ -74,128 +105,235 @@
             <span><strong data-i18n="navSettings">设置</strong></span>
           </button>
         </nav>
-        <div class="sidebar-footer">
-          <span class="status-dot" id="serverDot"></span>
-          <span id="serverStatus">检查中</span>
-        </div>
       </aside>
 
-      <main class="main">
+      <main class="main" id="mainContent">
         <header class="topbar">
-          <div>
+          <button class="icon-button mobile-menu" id="sidebarToggleBtn" type="button" title="打开导航" aria-label="打开导航" data-i18n-title="titleOpenNav" data-i18n-aria-label="titleOpenNav">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          </button>
+          <div class="topbar-heading">
+            <span class="page-section" id="pageSection">工作台</span>
             <h2 id="pageTitle">运行总览</h2>
-            <p class="topbar-subtitle" id="profileLine">Ollama · 未选模型</p>
           </div>
           <div class="topbar-actions">
-            <button class="ghost-button" id="refreshRunsBtn" title="刷新运行记录" data-i18n="actionRefresh" data-i18n-title="titleRefreshRuns">刷新</button>
-            <button class="primary-button" id="quickHealthBtn" title="检查当前本地模型端点" data-i18n="actionHealth" data-i18n-title="titleHealth">端点检查</button>
+            <div class="runtime-chip" title="当前本地运行时">
+              <span class="status-dot" id="serverDot"></span>
+              <span id="serverStatus">检查中</span>
+              <span class="runtime-divider" aria-hidden="true"></span>
+              <span id="profileLine">Ollama · 未选模型</span>
+            </div>
+            <button class="icon-button" id="refreshRunsBtn" title="刷新运行记录" data-i18n-title="titleRefreshRuns" aria-label="刷新运行记录">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 8a7 7 0 1 0 1 5" /><path d="M19 4v4h-4" /></svg>
+            </button>
+            <button class="ghost-button" id="quickHealthBtn" title="检查当前本地模型端点" data-i18n="actionHealth" data-i18n-title="titleHealth">端点检查</button>
+            <button class="primary-button" id="newEvalBtn" data-i18n="actionNewEval">发起验收</button>
           </div>
         </header>
 
         <section class="page active" id="page-control">
-          <section class="panel full scenario-panel">
-            <div class="panel-head">
-              <div>
-                <h3 data-i18n="scenarioTitle">内置场景</h3>
-              </div>
-            </div>
-            <div class="scenario-grid" id="scenarioGrid"></div>
-          </section>
-
-          <div class="layout two-col">
-            <section class="panel">
-              <div class="panel-head">
-                <div>
-                  <h3 data-i18n="endpointTitle">模型端点</h3>
-                </div>
-                <span class="badge" id="profileBadge">未连接</span>
-              </div>
-              <div class="form-grid">
+          <section class="overview-command" aria-labelledby="overviewVerdict">
+            <div class="overview-command-copy">
+              <span class="overview-state" id="overviewVerdictFlag">尚未验收</span>
+              <h3 id="overviewVerdict">先建立一条可信的模型基线</h3>
+              <p id="overviewVerdictDetail">连接本地模型，选择基准并运行验收。结果会保留规则分、失败原因和运行证据。</p>
+              <div class="quick-connect-grid">
                 <label>
-                  <span data-i18n="fieldProvider">供应商</span>
-                  <select id="providerInput">
-                    <option value="ollama" data-i18n="providerOllama">Ollama</option>
-                    <option value="lmstudio" data-i18n="providerLmStudio">LM Studio</option>
-                    <option value="llamacpp" data-i18n="providerLlamaCpp">llama.cpp 服务</option>
+                  <span data-i18n="fieldRuntime">运行时</span>
+                  <select id="quickProviderInput">
+                    <option value="ollama">Ollama</option>
+                    <option value="lmstudio">LM Studio</option>
+                    <option value="llamacpp">llama.cpp</option>
+                    <option value="vllm">vLLM</option>
                     <option value="openai" data-i18n="providerOpenAiCompat">OpenAI 兼容</option>
-                    <option value="vllm" data-i18n="providerVllmCompat">vLLM 兼容</option>
                   </select>
                 </label>
                 <label>
                   <span data-i18n="fieldBaseUrl">地址</span>
-                  <input id="baseUrlInput" type="url" spellcheck="false" />
+                  <input id="quickBaseUrlInput" type="url" spellcheck="false" />
                 </label>
                 <label>
                   <span data-i18n="fieldModel">模型</span>
-                  <input id="modelInput" list="modelList" spellcheck="false" placeholder="qwen2.5:1.5b" />
-                  <datalist id="modelList"></datalist>
+                  <select id="quickModelInput">
+                    <option value="" data-i18n="quickModelDetectFirst">先检测端点</option>
+                  </select>
                 </label>
-                <label>
-                  <span data-i18n="fieldApiKey">API 密钥</span>
-                  <input id="apiKeyInput" type="password" spellcheck="false" placeholder="可选" />
-                </label>
+                <button class="primary-button quick-detect-button" id="quickDetectModelsBtn" data-i18n="actionDetectModels">检测并读取模型</button>
               </div>
-              <div class="button-row">
-                <button class="primary-button" id="loadModelsBtn" data-i18n="actionLoadModels">读取模型</button>
-                <button class="ghost-button" id="saveProfileBtn" data-i18n="actionSaveProfile">保存配置</button>
+              <div class="quick-connect-footer">
+                <span class="connection-status" id="quickConnectionStatus" role="status" aria-live="polite">等待检测本地端点</span>
+                <button class="text-button" id="quickConnectionSettingsBtn" data-i18n="actionAdvancedSettings">高级连接设置</button>
               </div>
-              <div class="model-list" id="modelsOutput"></div>
-            </section>
+              <div class="quick-speed-tool" aria-labelledby="quickBenchmarkTitle">
+                <div class="quick-speed-heading">
+                  <strong id="quickBenchmarkTitle" data-i18n="quickBenchmarkTitle">Token 生成速度</strong>
+                  <span class="quick-speed-status" id="quickBenchmarkStatus">等待</span>
+                </div>
+                <div class="quick-speed-metrics" aria-live="polite">
+                  <div class="quick-speed-primary"><span>Token/s</span><strong id="quickBenchmarkTps">--</strong></div>
+                  <div><span data-i18n="quickLatency">延迟</span><strong id="quickBenchmarkLatency">--</strong></div>
+                  <div><span data-i18n="quickMemory">内存</span><strong id="quickBenchmarkMemory">--</strong></div>
+                  <strong class="visually-hidden" id="quickBenchmarkProgress">0/3</strong>
+                </div>
+                <input id="quickBenchmarkRunsInput" type="hidden" value="3" />
+                <input id="quickBenchmarkTokensInput" type="hidden" value="128" />
+                <button class="primary-button quick-speed-button" id="quickBenchmarkBtn" data-i18n="actionStartBenchmark">测 Token/s</button>
+                <div id="quickBenchmarkTimeline" hidden></div>
+              </div>
+            </div>
+            <div class="overview-score-cluster" aria-label="最近质量分">
+              <strong id="overviewScore">--</strong>
+              <span data-i18n="overviewLatestScore">最近质量分</span>
+            </div>
+          </section>
 
-            <section class="panel">
+          <div class="overview-grid">
+            <section class="panel overview-launch-panel">
               <div class="panel-head">
                 <div>
-                  <h3 data-i18n="paramsTitle">小模型默认约束</h3>
+                  <h3 data-i18n="overviewEvalPlan">当前验收方案</h3>
+                </div>
+                <button class="text-button" id="overviewConfigureEvalBtn" data-i18n="actionConfigure">配置</button>
+              </div>
+              <div class="overview-plan-list">
+                <div><span data-i18n="fieldEvalSuite">测试</span><strong id="overviewEvalSuite">JSON 抽取</strong></div>
+                <div><span data-i18n="fieldQuestionSet">题组</span><strong id="overviewEvalSet">业务抽取</strong></div>
+                <div><span data-i18n="fieldRunMode">模式</span><strong id="overviewEvalMode">快速 · 规则</strong></div>
+                <div><span data-i18n="fieldCaseCount">题量</span><strong id="overviewEvalCases">4 题</strong></div>
+              </div>
+              <div class="overview-plan-action">
+                <span id="nextActionTile">选择模型后运行</span>
+                <button class="primary-button" id="overviewRunEvalBtn" data-i18n="actionRunEval">运行验收</button>
+              </div>
+            </section>
+
+            <section class="panel overview-recent-panel">
+              <div class="panel-head">
+                <div>
+                  <h3 data-i18n="overviewRecentRuns">最近运行</h3>
+                </div>
+                <button class="text-button" id="overviewAllRunsBtn" data-i18n="actionViewAll">查看全部</button>
+              </div>
+              <div class="overview-run-list" id="overviewRecentRuns">
+                <div class="empty-state compact">暂无运行记录</div>
+              </div>
+            </section>
+
+            <section class="panel overview-hotspot-panel">
+              <div class="panel-head">
+                <div>
+                  <h3 data-i18n="overviewFailureAnalysis">失败分析</h3>
                 </div>
               </div>
-              <div class="range-grid">
-                <label>
-                  <span data-i18n="fieldTemperature">温度</span>
-                  <input id="temperatureInput" type="range" min="0" max="1.5" step="0.05" />
-                  <output id="temperatureValue"></output>
-                </label>
-                <label>
-                  <span data-i18n="fieldTopP">Top P</span>
-                  <input id="topPInput" type="range" min="0.1" max="1" step="0.05" />
-                  <output id="topPValue"></output>
-                </label>
-                <label>
-                  <span data-i18n="fieldMaxTokens">最大输出</span>
-                  <input id="maxTokensInput" type="number" min="16" max="4096" step="16" />
-                </label>
-                <label>
-                  <span data-i18n="fieldContextTokens">上下文长度</span>
-                  <input id="contextTokensInput" type="number" min="512" max="32768" step="512" />
-                </label>
-              </div>
-              <div class="hint-list">
-                <div><strong data-i18n="hintPromptLabel">提示词</strong>: <span data-i18n="hintPrompt">角色短、任务短、输出格式硬约束。</span></div>
-                <div><strong data-i18n="hintSwarmLabel">多角色</strong>: <span data-i18n="hintSwarm">多角色串行比大模型自我反思更稳定，但轮数要少。</span></div>
-                <div><strong data-i18n="hintEvalLabel">验收</strong>: <span data-i18n="hintEval">先用关键词/正则，本地小模型评审容易不稳定。</span></div>
+              <div class="overview-hotspot-list" id="overviewFailureHotspots">
+                <div class="empty-state compact">运行验收后显示主要失败标签</div>
               </div>
             </section>
           </div>
+        </section>
 
-          <section class="panel full guide-panel">
+        <section class="page" id="page-benchmarks">
+          <section class="asset-summary" aria-label="基准库概览">
+            <div><strong id="benchmarkSuiteCount">9</strong><span data-i18n="benchmarkClasses">能力类别</span></div>
+            <div><strong id="benchmarkCaseCount">84</strong><span data-i18n="benchmarkCases">内置题目</span></div>
+            <div><strong>3</strong><span data-i18n="benchmarkDifficulties">难度等级</span></div>
+            <div><strong>2</strong><span data-i18n="benchmarkLanguages">中英语言</span></div>
+          </section>
+          <section class="panel full scenario-panel benchmark-library-panel">
             <div class="panel-head">
               <div>
-                <h3 data-i18n="localTierTitle">推荐本地模型档位</h3>
+                <h3 data-i18n="scenarioTitle">基准库</h3>
+              </div>
+              <button class="primary-button" id="benchmarkStartEvalBtn" data-i18n="actionNewEval">发起验收</button>
+            </div>
+            <div class="benchmark-library-overview">
+              <div>
+                <span data-i18n="benchmarkLibraryLabel">Mini Benchmark</span>
+                <strong data-i18n="benchmarkLibraryTitle">小模型基准库</strong>
+                <p data-i18n="benchmarkLibraryDesc">每个基准库由题组、难度、检查方式和标准答案组成，用来判断本地小模型是否可用。</p>
               </div>
             </div>
-            <div class="matrix">
-              <div class="matrix-row matrix-head">
-                <span data-i18n="matrixTier">档位</span><span data-i18n="matrixUse">用途</span><span data-i18n="matrixStrategy">运行策略</span><span data-i18n="matrixRisk">风险</span>
+            <div class="benchmark-library-workbench">
+              <section class="benchmark-detail-panel" id="benchmarkDetailPanel"></section>
+              <section class="benchmark-add-panel">
+                <div class="benchmark-add-head">
+                  <div>
+                    <h4 data-i18n="benchmarkAddTitle">添加基准库</h4>
+                    <p data-i18n="benchmarkAddDesc">粘贴 JSON 包，加入当前本地基准库。</p>
+                  </div>
+                  <button class="ghost-button" id="benchmarkSampleBtn" type="button" data-i18n="benchmarkSampleAction">示例</button>
+                </div>
+                <textarea id="benchmarkImportInput" rows="7" spellcheck="false" data-i18n-placeholder="benchmarkImportPlaceholder" placeholder="Paste benchmark JSON"></textarea>
+                <div class="benchmark-add-actions">
+                  <span id="benchmarkImportStatus" data-i18n="benchmarkImportReady">等待导入</span>
+                  <button class="primary-button" id="benchmarkImportBtn" type="button" data-i18n="benchmarkImportAction">添加基准库</button>
+                </div>
+              </section>
+            </div>
+            <div class="scenario-grid" id="scenarioGrid"></div>
+          </section>
+        </section>
+
+        <section class="page" id="page-benchmark-detail">
+          <section class="panel full benchmark-detail-page-panel">
+            <div class="panel-head">
+              <div>
+                <h3 id="benchmarkDetailPageTitle">基准库内容</h3>
               </div>
-              <div class="matrix-row">
-                <span>1B-1.5B</span><span>分类、抽取、格式转换、轻量路由</span><span>低温、短输出、强模板</span><span>复杂推理弱</span>
-              </div>
-              <div class="matrix-row">
-                <span>2B-3B</span><span>短问答、代码片段、任务拆解、审校</span><span>2-3 个角色轮转</span><span>长上下文易漂移</span>
-              </div>
-              <div class="matrix-row">
-                <span>多模型</span><span>规划 + 求解 + 审校 + 合成</span><span>每步压缩记忆</span><span>总延迟增加</span>
+              <div class="button-row">
+                <button class="ghost-button" id="benchmarkDetailBackBtn" data-i18n="actionBackBenchmarks">返回基准库</button>
+                <button class="primary-button" id="benchmarkDetailLoadBtn" data-i18n="actionLoadScenario">加载场景</button>
               </div>
             </div>
+            <div class="benchmark-detail-page-content" id="benchmarkDetailPageContent"></div>
+          </section>
+        </section>
+
+        <section class="page" id="page-benchmark-add">
+          <section class="panel full benchmark-add-page-panel">
+            <div class="panel-head">
+              <div>
+                <h3 data-i18n="benchmarkAddTitle">添加基准库</h3>
+                <p data-i18n="benchmarkAddDesc">粘贴 JSON 包，加入当前本地基准库。</p>
+              </div>
+              <div class="button-row">
+                <button class="ghost-button" id="benchmarkAddBackBtn" data-i18n="actionBackBenchmarks">返回基准库</button>
+                <button class="ghost-button" id="benchmarkSampleBtn" type="button" data-i18n="benchmarkSampleAction">示例</button>
+              </div>
+            </div>
+            <textarea id="benchmarkImportInput" rows="18" spellcheck="false" data-i18n-placeholder="benchmarkImportPlaceholder" placeholder="Paste benchmark JSON"></textarea>
+            <div class="benchmark-add-actions">
+              <span id="benchmarkImportStatus" data-i18n="benchmarkImportReady">等待导入</span>
+              <button class="primary-button" id="benchmarkImportBtn" type="button" data-i18n="benchmarkImportAction">添加基准库</button>
+            </div>
+          </section>
+        </section>
+
+        <section class="page" id="page-models">
+          <section class="panel full model-catalog-panel">
+            <div class="panel-head">
+              <div>
+                <h3 data-i18n="modelCatalogTitle">小模型库</h3>
+                <p data-i18n="modelCatalogDesc">按品牌、场景和内存选择候选模型。</p>
+              </div>
+            </div>
+            <div class="catalog-toolbar">
+              <label>
+                <span data-i18n="fieldSearch">搜索</span>
+                <input id="modelCatalogSearch" type="search" spellcheck="false" placeholder="Qwen / 数学 / JSON / 1.5B" data-i18n-placeholder="placeholderModelCatalogSearch" />
+              </label>
+              <div class="catalog-filter">
+                <span data-i18n="fieldType">类型</span>
+                <div class="segmented-control compact" id="modelCatalogFilter">
+                  <button class="active" data-model-filter="all" data-i18n="optionAll">全部</button>
+                  <button data-model-filter="recommended" data-i18n="modelFilterRecommended">常用</button>
+                  <button data-model-filter="domestic" data-i18n="modelFilterDomestic">国内</button>
+                  <button data-model-filter="overseas" data-i18n="modelFilterOverseas">海外</button>
+                  <button data-model-filter="edge" data-i18n="modelFilterEdge">低内存</button>
+                </div>
+              </div>
+            </div>
+            <div class="model-catalog-grid" id="modelCatalogGrid"></div>
           </section>
         </section>
 
@@ -204,7 +342,7 @@
             <section class="panel">
               <div class="panel-head">
                 <div>
-                  <h3 data-i18n="promptTitle">单模型调教</h3>
+                  <h3 data-i18n="promptTitle">单模型测试</h3>
                 </div>
                 <button class="ghost-button" id="loadPromptPresetBtn" data-i18n="actionLoadPromptPreset">填入小模型模板</button>
               </div>
@@ -239,67 +377,185 @@
         </section>
 
         <section class="page" id="page-swarm">
-          <div class="layout two-col wide-left">
-            <section class="panel">
-              <div class="panel-head">
+          <section class="workflow-studio" aria-label="工作流编排器">
+            <header class="workflow-studio-toolbar">
+              <div class="workflow-studio-brand">
+                <span class="workflow-studio-mark" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M5 6h5v5H5zM14 13h5v5h-5zM14 4h5v5h-5z" /><path d="M10 8.5h4M16.5 9v4M10 9.5l4 5" /></svg>
+                </span>
                 <div>
-                  <h3 data-i18n="swarmTitle">多角色链路</h3>
+                  <h3 data-i18n="swarmTitle">工作流编排</h3>
+                  <span id="workflowGraphMeta">0 个节点 · 0 条连线</span>
                 </div>
-                <span class="badge" data-i18n="badgeSerialTrace">串行轨迹</span>
+                <span class="workflow-beta-badge" aria-label="Beta version">BETA</span>
               </div>
-              <label class="stacked">
-                <span data-i18n="fieldTask">任务</span>
-                <textarea id="swarmTaskInput" rows="6" spellcheck="false"></textarea>
-              </label>
-              <div class="form-grid compact">
-                <label>
-                  <span data-i18n="fieldRounds">轮数</span>
-                  <input id="swarmRoundsInput" type="number" min="1" max="5" step="1" />
-                </label>
-                <label>
-                  <span data-i18n="fieldAgentMemory">角色记忆</span>
-                  <select id="swarmMemoryInput">
-                    <option value="compact" data-i18n="optionCompactMemory">压缩最近 10 条</option>
-                    <option value="minimal" data-i18n="optionMinimalMemory">最少记忆</option>
-                  </select>
-                </label>
-              </div>
-              <label class="inline-check">
-                <input id="swarmBaselineInput" type="checkbox" />
-                <span data-i18n="checkboxSwarmBaseline">对比单次调用基线</span>
-              </label>
-              <div class="agent-table" id="agentTable"></div>
-              <div class="button-row">
-                <button class="primary-button" id="runSwarmBtn" data-i18n="actionRunSwarm">运行多角色</button>
-                <button class="ghost-button" id="resetAgentsBtn" data-i18n="actionResetAgents">重置角色</button>
-              </div>
-            </section>
 
-            <section class="panel output-panel">
-              <div class="panel-head">
-                <div>
-                  <h3 data-i18n="swarmTraceTitle">多角色轨迹</h3>
-                  <p id="swarmMeta">等待运行</p>
-                </div>
+              <div class="workflow-template-group">
+                <span data-i18n="workflowTemplates">模板</span>
+                <div class="workflow-template-tabs" id="workflowTemplateTabs"></div>
               </div>
-              <div class="trace" id="swarmOutput"></div>
-            </section>
-          </div>
+
+              <div class="workflow-studio-actions">
+                <div class="workflow-model-indicator">
+                  <span data-i18n="workflowCurrentModel">当前模型</span>
+                  <strong id="workflowModelName">未选择</strong>
+                </div>
+                <button class="icon-button" id="resetAgentsBtn" type="button" title="恢复模板" aria-label="恢复模板">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7v5h5" /><path d="M5.6 16a8 8 0 1 0 .7-9.4L4 9" /></svg>
+                </button>
+                <button class="primary-button workflow-run-button" id="runSwarmBtn" type="button">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z" /></svg>
+                  <span data-i18n="actionRunSwarm">运行工作流</span>
+                </button>
+              </div>
+            </header>
+
+            <div class="workflow-studio-body">
+              <aside class="workflow-node-library" aria-label="节点库">
+                <div class="workflow-library-head">
+                  <strong data-i18n="workflowNodesLabel">节点</strong>
+                  <span data-i18n="workflowDragIntoCanvas">拖入画布</span>
+                </div>
+
+                <div class="workflow-library-group">
+                  <span data-i18n="workflowModelsGroup">模型</span>
+                  <button class="workflow-palette-item" type="button" draggable="true" data-workflow-create-type="model">
+                    <i class="workflow-palette-icon type-model" aria-hidden="true">
+                      <svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2" /><path d="m8 10 2 2-2 2M13 14h3" /></svg>
+                    </i>
+                    <strong data-i18n="workflowNodeModel">模型调用</strong>
+                  </button>
+                  <button class="workflow-palette-item" type="button" draggable="true" data-workflow-create-type="agent">
+                    <i class="workflow-palette-icon type-agent" aria-hidden="true">
+                      <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3" /><circle cx="17" cy="10" r="2" /><path d="M4 19c.8-3.4 2.5-5 5-5s4.2 1.6 5 5M14 16c.7-1.6 1.7-2.4 3.2-2.4 1.4 0 2.5.8 3.1 2.4" /></svg>
+                    </i>
+                    <strong data-i18n="workflowNodeAgent">智能体</strong>
+                  </button>
+                  <button class="workflow-palette-item" type="button" draggable="true" data-workflow-create-type="router">
+                    <i class="workflow-palette-icon type-router" aria-hidden="true">
+                      <svg viewBox="0 0 24 24"><path d="M5 5v14M5 8h7a4 4 0 0 1 4 4v7M16 15l3 4-3 4" /><path d="M12 8l3-3-3-3" /></svg>
+                    </i>
+                    <strong data-i18n="workflowNodeRouter">条件路由</strong>
+                  </button>
+                  <button class="workflow-palette-item" type="button" draggable="true" data-workflow-create-type="judge">
+                    <i class="workflow-palette-icon type-judge" aria-hidden="true">
+                      <svg viewBox="0 0 24 24"><path d="M12 3v18M6 6h12M7 6l-4 7h8L7 6ZM17 6l-4 7h8l-4-7Z" /></svg>
+                    </i>
+                    <strong data-i18n="workflowNodeJudge">强模型评审</strong>
+                  </button>
+                </div>
+
+                <div class="workflow-library-group">
+                  <span data-i18n="workflowProcessGroup">处理</span>
+                  <button class="workflow-palette-item" type="button" draggable="true" data-workflow-create-type="prompt">
+                    <i class="workflow-palette-icon type-prompt" aria-hidden="true">
+                      <svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8 9h8M8 13h5" /></svg>
+                    </i>
+                    <strong data-i18n="workflowNodePromptTemplate">提示词模板</strong>
+                  </button>
+                  <button class="workflow-palette-item" type="button" draggable="true" data-workflow-create-type="merge">
+                    <i class="workflow-palette-icon type-merge" aria-hidden="true">
+                      <svg viewBox="0 0 24 24"><path d="M5 5v4a3 3 0 0 0 3 3h8M5 19v-4a3 3 0 0 1 3-3M16 8l4 4-4 4" /></svg>
+                    </i>
+                    <strong data-i18n="workflowNodeMerge">结果合并</strong>
+                  </button>
+                </div>
+
+                <div class="workflow-library-group">
+                  <span data-i18n="workflowChecksGroup">检查</span>
+                  <button class="workflow-palette-item" type="button" draggable="true" data-workflow-create-type="json_check">
+                    <i class="workflow-palette-icon type-json_check" aria-hidden="true">
+                      <svg viewBox="0 0 24 24"><path d="M9 4H7a2 2 0 0 0-2 2v3a2 2 0 0 1-2 2 2 2 0 0 1 2 2v3a2 2 0 0 0 2 2h2M15 4h2a2 2 0 0 1 2 2v3a2 2 0 0 0 2 2 2 2 0 0 0-2 2v3a2 2 0 0 1-2 2h-2" /></svg>
+                    </i>
+                    <strong data-i18n="workflowNodeJsonCheck">JSON 检查</strong>
+                  </button>
+                  <button class="workflow-palette-item" type="button" draggable="true" data-workflow-create-type="tool_check">
+                    <i class="workflow-palette-icon type-tool_check" aria-hidden="true">
+                      <svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5 5L4 17l3 3 5.7-5.7a4 4 0 0 0 5-5l-2.4 2.4-3-3 2.4-2.4Z" /></svg>
+                    </i>
+                    <strong data-i18n="workflowNodeToolCheck">工具检查</strong>
+                  </button>
+                  <button class="workflow-palette-item" type="button" draggable="true" data-workflow-create-type="text_check">
+                    <i class="workflow-palette-icon type-text_check" aria-hidden="true">
+                      <svg viewBox="0 0 24 24"><path d="M5 6h14M9 6v12M6 18h6M15 14l2 2 4-5" /></svg>
+                    </i>
+                    <strong data-i18n="workflowNodeTextCheck">文本检查</strong>
+                  </button>
+                  <button class="workflow-palette-item" type="button" draggable="true" data-workflow-create-type="boundary_check">
+                    <i class="workflow-palette-icon type-boundary_check" aria-hidden="true">
+                      <svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.6 2.8 7.8 7 10 4.2-2.2 7-5.4 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-4" /></svg>
+                    </i>
+                    <strong data-i18n="workflowNodeBoundaryCheck">边界检查</strong>
+                  </button>
+                </div>
+
+                <div class="workflow-library-note">
+                  <span class="workflow-library-dot"></span>
+                  <span data-i18n="workflowConnectionHint">连接端口后才会进入执行链</span>
+                </div>
+              </aside>
+
+              <section class="workflow-canvas-pane" aria-labelledby="workflowCanvasHeading">
+                <div class="workflow-canvas-head">
+                  <div>
+                    <h4 id="workflowCanvasHeading" data-i18n="workflowCanvasTitle">节点画布</h4>
+                    <button class="workflow-graph-status" id="workflowGraphStatus" type="button" aria-live="polite" data-i18n="workflowSelectHint">选择节点或连线进行配置</button>
+                  </div>
+                  <span class="workflow-local-save" id="workflowSaveStatus">
+                    <i aria-hidden="true"></i>
+                    <span data-i18n="workflowSavedLocal">已保存到本地</span>
+                  </span>
+                </div>
+                <div class="workflow-canvas-viewport" id="workflowCanvasViewport">
+                  <div class="workflow-canvas-stage" id="workflowCanvasStage">
+                    <div class="workflow-canvas" id="workflowCanvas"></div>
+                  </div>
+                  <div class="workflow-drop-hint" id="workflowDropHint" data-i18n="workflowDropNode">松开以添加节点</div>
+                  <div class="workflow-canvas-controls" aria-label="画布缩放">
+                    <button class="icon-button" id="workflowZoomOutBtn" type="button" title="缩小" aria-label="缩小">−</button>
+                    <button class="workflow-zoom-value" id="workflowZoomValue" type="button" title="适应画布">90%</button>
+                    <button class="icon-button" id="workflowZoomInBtn" type="button" title="放大" aria-label="放大">+</button>
+                    <button class="icon-button" id="workflowArrangeBtn" type="button" title="自动整理" aria-label="自动整理">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="6" height="5" rx="1" /><rect x="15" y="4" width="6" height="5" rx="1" /><rect x="9" y="15" width="6" height="5" rx="1" /><path d="M6 9v3h6m6-3v3h-6v3" /></svg>
+                    </button>
+                    <button class="icon-button" id="workflowFitBtn" type="button" title="适应画布" aria-label="适应画布">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5" /></svg>
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+              <aside class="workflow-side-panel">
+                <div class="workflow-side-tabs" role="tablist" aria-label="工作流侧栏">
+                  <button class="active" id="workflowInspectorTab" type="button" role="tab" aria-selected="true" data-i18n="workflowConfigTab">配置</button>
+                  <button id="workflowRunTab" type="button" role="tab" aria-selected="false" data-i18n="workflowRunTab">运行结果</button>
+                </div>
+
+                <div class="workflow-side-pane" id="workflowInspectorPane" role="tabpanel">
+                  <div class="workflow-node-editor" id="workflowNodeEditor"></div>
+                </div>
+
+                <div class="workflow-side-pane" id="workflowRunPane" role="tabpanel" hidden>
+                  <div class="workflow-run-head">
+                    <strong data-i18n="swarmTraceTitle">执行轨迹</strong>
+                    <span id="swarmMeta">等待运行</span>
+                  </div>
+                  <div class="workflow-run-summary" id="workflowRunSummary" hidden></div>
+                  <div class="trace" id="swarmOutput"></div>
+                </div>
+              </aside>
+            </div>
+          </section>
         </section>
 
         <section class="page" id="page-eval">
-          <div class="layout two-col wide-left">
-            <section class="panel">
+          <div class="eval-workspace">
+            <section class="panel eval-config-panel">
               <div class="panel-head">
                 <div>
-                  <h3 data-i18n="evalDatasetTitle">验收数据集</h3>
+                  <h3 data-i18n="evalConfigTitle">运行配置</h3>
                 </div>
-                <div class="button-row">
-                  <button class="ghost-button" id="loadEvalPresetBtn" data-i18n="actionLoadSample">加载样例</button>
-                  <button class="ghost-button" id="importEvalPackBtn" data-i18n="actionImportPack">导入包</button>
-                  <button class="ghost-button" id="exportEvalPackBtn" data-i18n="actionExportPack">导出包</button>
-                  <input id="evalPackFileInput" type="file" accept="application/json,.json" hidden />
-                </div>
+                <span class="badge" id="evalConfigBadge">规则评分</span>
               </div>
               <div class="eval-config">
                 <div class="difficulty-field run-mode-field">
@@ -335,22 +591,48 @@
                     <button type="button" data-difficulty="hard" data-i18n="difficultyHard">高</button>
                   </div>
                 </div>
+                <div class="difficulty-field judge-mode-field">
+                  <span data-i18n="fieldScoringMode">评分</span>
+                  <div class="segmented-control judge-mode-control" id="evalJudgeModeToggle" aria-label="评分" data-i18n-aria-label="fieldScoringMode">
+                    <button type="button" data-judge-mode="rules" data-i18n="judgeModeRules">规则</button>
+                    <button type="button" data-judge-mode="mixed" data-i18n="judgeModeMixed">混合</button>
+                  </div>
+                </div>
               </div>
-              <label class="stacked">
-                <span data-i18n="fieldDefaultSystem">默认系统提示词</span>
-                <textarea id="evalSystemInput" rows="3" spellcheck="false"></textarea>
-              </label>
-              <label class="stacked">
-                <span data-i18n="fieldCasesJson">用例 JSON</span>
-                <textarea id="evalDatasetInput" class="code-input" rows="16" spellcheck="false"></textarea>
-              </label>
-              <div class="button-row">
+
+              <div class="eval-launch-row">
+                <div class="eval-selection-summary">
+                  <strong id="evalSelectionTitle">JSON 抽取 · 业务抽取</strong>
+                  <span id="evalSelectionMeta">快速 · 中 · 4 题 · 规则评分</span>
+                </div>
                 <button class="primary-button" id="runEvalBtn" data-i18n="actionRunEval">运行验收</button>
-                <button class="ghost-button" id="formatEvalBtn" data-i18n="actionFormatJson">格式化 JSON</button>
               </div>
+
+              <details class="advanced-editor">
+                <summary data-i18n="evalAdvancedConfig">高级配置</summary>
+                <div class="advanced-editor-body">
+                  <div class="button-row advanced-editor-actions">
+                    <button class="ghost-button" id="loadEvalPresetBtn" data-i18n="actionLoadSample">加载样例</button>
+                    <button class="ghost-button" id="importEvalPackBtn" data-i18n="actionImportPack">导入包</button>
+                    <button class="ghost-button" id="exportEvalPackBtn" data-i18n="actionExportPack">导出包</button>
+                    <input id="evalPackFileInput" type="file" accept="application/json,.json" hidden />
+                  </div>
+                  <label class="stacked">
+                    <span data-i18n="fieldDefaultSystem">默认系统提示词</span>
+                    <textarea id="evalSystemInput" rows="3" spellcheck="false"></textarea>
+                  </label>
+                  <label class="stacked">
+                    <span data-i18n="fieldCasesJson">用例 JSON</span>
+                    <textarea id="evalDatasetInput" class="code-input" rows="14" spellcheck="false"></textarea>
+                  </label>
+                  <div class="button-row">
+                    <button class="ghost-button" id="formatEvalBtn" data-i18n="actionFormatJson">格式化 JSON</button>
+                  </div>
+                </div>
+              </details>
             </section>
 
-            <section class="panel output-panel">
+            <section class="panel output-panel eval-output-panel">
               <div class="panel-head">
                 <div>
                   <h3 data-i18n="evalResultTitle">验收结果</h3>
@@ -414,7 +696,9 @@
             </div>
             <div class="button-row">
               <button class="primary-button" id="runCompareBtn" data-i18n="actionCompare">比较</button>
+              <button class="ghost-button" id="runCompareJudgeBtn" data-i18n="actionCompareJudge">强模型分析</button>
             </div>
+            <div class="compare-judge-output" id="compareJudgeOutput" hidden></div>
             <div class="compare-output" id="compareOutput"></div>
           </section>
         </section>
@@ -462,7 +746,7 @@
                 <div>
                   <h3 data-i18n="benchmarkTitle">生成测速</h3>
                 </div>
-                <span class="badge" data-i18n="badgeNonStreaming">非流式</span>
+                <span class="badge" data-i18n="badgeStreaming">实时反馈</span>
               </div>
               <div class="form-grid compact">
                 <label>
@@ -503,22 +787,156 @@
         </section>
 
         <section class="page" id="page-settings">
-          <section class="panel full settings-panel">
+          <div class="settings-grid">
+            <section class="panel runtime-settings-panel">
+              <div class="panel-head">
+                <div>
+                  <h3 data-i18n="endpointTitle">模型运行时</h3>
+                </div>
+                <span class="badge" id="profileBadge">未连接</span>
+              </div>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="fieldProvider">供应商</span>
+                  <select id="providerInput">
+                    <option value="ollama" data-i18n="providerOllama">Ollama</option>
+                    <option value="lmstudio" data-i18n="providerLmStudio">LM Studio</option>
+                    <option value="llamacpp" data-i18n="providerLlamaCpp">llama.cpp 服务</option>
+                    <option value="openai" data-i18n="providerOpenAiCompat">OpenAI 兼容</option>
+                    <option value="vllm" data-i18n="providerVllmCompat">vLLM 兼容</option>
+                  </select>
+                </label>
+                <label>
+                  <span data-i18n="fieldBaseUrl">地址</span>
+                  <input id="baseUrlInput" type="url" spellcheck="false" />
+                </label>
+                <label>
+                  <span data-i18n="fieldModel">模型</span>
+                  <input id="modelInput" list="modelList" spellcheck="false" placeholder="qwen2.5:1.5b" />
+                  <datalist id="modelList"></datalist>
+                </label>
+                <label>
+                  <span data-i18n="fieldApiKey">API 密钥</span>
+                  <input id="apiKeyInput" type="password" spellcheck="false" placeholder="可选" />
+                </label>
+              </div>
+              <div class="button-row">
+                <button class="primary-button" id="loadModelsBtn" data-i18n="actionLoadModels">读取模型</button>
+                <button class="ghost-button" id="saveProfileBtn" data-i18n="actionSaveProfile">保存配置</button>
+              </div>
+              <div class="model-list" id="modelsOutput"></div>
+            </section>
+
+            <section class="panel generation-settings-panel">
+              <div class="panel-head">
+                <div>
+                  <h3 data-i18n="paramsTitle">生成参数</h3>
+                </div>
+              </div>
+              <div class="range-grid">
+                <label>
+                  <span data-i18n="fieldTemperature">温度</span>
+                  <input id="temperatureInput" type="range" min="0" max="1.5" step="0.05" />
+                  <output id="temperatureValue"></output>
+                </label>
+                <label>
+                  <span data-i18n="fieldTopP">Top P</span>
+                  <input id="topPInput" type="range" min="0.1" max="1" step="0.05" />
+                  <output id="topPValue"></output>
+                </label>
+                <label>
+                  <span data-i18n="fieldMaxTokens">最大输出</span>
+                  <input id="maxTokensInput" type="number" min="16" max="4096" step="16" />
+                </label>
+                <label>
+                  <span data-i18n="fieldContextTokens">上下文长度</span>
+                  <input id="contextTokensInput" type="number" min="512" max="32768" step="512" />
+                </label>
+              </div>
+              <div class="hint-list">
+                <div><strong data-i18n="hintPromptLabel">提示词</strong><span data-i18n="hintPrompt">角色短、任务短、输出格式硬约束。</span></div>
+                <div><strong data-i18n="hintSwarmLabel">多角色</strong><span data-i18n="hintSwarm">多角色串行比大模型自我反思更稳定，但轮数要少。</span></div>
+                <div><strong data-i18n="hintEvalLabel">验收</strong><span data-i18n="hintEval">先用关键词、正则和结构检查，少依赖小模型自评。</span></div>
+              </div>
+            </section>
+          </div>
+
+          <section class="panel full settings-panel general-settings-panel">
             <div class="panel-head">
               <div>
-                <h3 data-i18n="settingsTitle">设置</h3>
+                <h3 data-i18n="settingsGeneral">通用设置</h3>
               </div>
             </div>
-            <div class="settings-list">
-              <div class="setting-row">
-                <div>
-                  <strong data-i18n="settingsLanguage">界面语言</strong>
-                </div>
-                <div class="segmented-control" id="languageToggle" aria-label="界面语言" data-i18n-aria-label="settingsLanguage">
-                  <button type="button" data-language="zh">中文</button>
-                  <button type="button" data-language="en">English</button>
-                </div>
+            <div class="setting-row">
+              <div>
+                <strong data-i18n="settingsLanguage">界面语言</strong>
               </div>
+              <div class="segmented-control" id="languageToggle" aria-label="界面语言" data-i18n-aria-label="settingsLanguage">
+                <button type="button" data-language="zh">中文</button>
+                <button type="button" data-language="en">English</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel full judge-settings">
+            <div class="judge-settings-head">
+              <strong data-i18n="settingsJudge">强模型评审</strong>
+              <span class="badge" id="judgeConfigStatus" data-i18n="judgeNotConfigured">未配置</span>
+            </div>
+            <div class="judge-form-grid">
+              <label>
+                <span data-i18n="fieldProvider">供应商</span>
+                <select id="judgeProviderInput">
+                  <option value="ollama">Ollama</option>
+                  <option value="lmstudio">LM Studio</option>
+                  <option value="llamacpp">llama.cpp</option>
+                  <option value="openai" data-i18n="providerOpenAiCompat">OpenAI 兼容</option>
+                  <option value="vllm" data-i18n="providerVllmCompat">vLLM 兼容</option>
+                </select>
+              </label>
+              <label>
+                <span data-i18n="fieldBaseUrl">地址</span>
+                <input id="judgeBaseUrlInput" type="url" spellcheck="false" />
+              </label>
+              <label>
+                <span data-i18n="fieldJudgeModel">评审模型</span>
+                <input id="judgeModelInput" type="text" list="judgeModelList" spellcheck="false" data-i18n-placeholder="placeholderJudgeModelFirst" placeholder="先读取模型" />
+                <datalist id="judgeModelList"></datalist>
+              </label>
+              <label>
+                <span data-i18n="fieldApiKey">API 密钥</span>
+                <input id="judgeApiKeyInput" type="password" spellcheck="false" data-i18n-placeholder="placeholderSessionOnly" placeholder="仅当前会话" />
+              </label>
+              <label>
+                <span data-i18n="fieldJudgeScope">评审范围</span>
+                <select id="judgeScopeInput">
+                  <option value="failed" data-i18n="judgeScopeFailed">规则失败题</option>
+                  <option value="subjective" data-i18n="judgeScopeSubjective">主观题</option>
+                  <option value="all" data-i18n="judgeScopeAll">全部题</option>
+                </select>
+              </label>
+              <label class="judge-range-field">
+                <span><span data-i18n="fieldJudgeWeight">评审权重</span><output id="judgeWeightValue">30%</output></span>
+                <input id="judgeWeightInput" type="range" min="0.05" max="0.8" step="0.05" />
+              </label>
+              <label class="judge-range-field">
+                <span><span data-i18n="fieldJudgeThreshold">通过阈值</span><output id="judgeThresholdValue">70</output></span>
+                <input id="judgeThresholdInput" type="range" min="0.5" max="0.95" step="0.05" />
+              </label>
+            </div>
+            <label class="stacked">
+              <span data-i18n="fieldJudgeRubric">默认评审标准</span>
+              <textarea id="judgeRubricInput" rows="3" spellcheck="false"></textarea>
+            </label>
+            <div class="button-row">
+              <button class="primary-button" id="loadJudgeModelsBtn" data-i18n="actionLoadJudgeModels">读取模型</button>
+              <button class="ghost-button" id="saveJudgeConfigBtn" data-i18n="actionSaveJudge">保存评审配置</button>
+              <button class="ghost-button" id="testJudgeBtn" data-i18n="actionTestJudge">测试评审</button>
+            </div>
+            <div class="model-list judge-model-list" id="judgeModelsOutput" hidden></div>
+            <div class="summary-card judge-test-output" id="judgeTestOutput">
+              <span data-i18n="statusReady">就绪</span>
+              <strong data-i18n="judgeTestReady">保存配置后可以测试接口。</strong>
             </div>
           </section>
         </section>

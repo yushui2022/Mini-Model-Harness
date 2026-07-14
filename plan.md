@@ -1475,3 +1475,17 @@ Update this section after long-running work.
   - Added Device page Runtime Memory and Generation Speed Test sections.
   - Added benchmark reporting fields for latency, tokens/s, chars/s, memory before/after, and runtime memory delta.
   - Documented memory and non-streaming benchmark limitations in `README.md`.
+- Completed the enterprise product-shell pass on 2026-07-11:
+  - Reorganized navigation into Workspace, Assets, Analysis, and System groups without removing existing workflows.
+  - Rebuilt the first page as a data-driven operating overview with current runtime/model, latest quality result, current eval plan, recent runs, and aggregated failure hotspots.
+  - Moved benchmark scenario cards into a dedicated Benchmark Library and moved runtime/generation configuration into Settings.
+  - Reworked Eval around visible run configuration and results, while keeping raw system prompt and case JSON inside an Advanced Configuration disclosure.
+  - Replaced the mobile navigation wall with an accessible drawer that is inert while closed and closes after navigation.
+  - Verified all eleven product pages at 1440px, the mobile drawer and benchmark/eval flows at 390px, Chinese/English switching, and the full mixed Judge regression flow.
+- Completed the dashboard local-runtime and live-speed workflow on 2026-07-11:
+  - Made runtime, endpoint, port, detected-model selection, and connection state primary controls on the Dashboard.
+  - Added shared model discovery for Ollama, LM Studio, llama.cpp, vLLM, and OpenAI-compatible servers, synchronized with Settings.
+  - Added `POST /api/benchmark/generate/stream` using NDJSON progress events while preserving the original benchmark endpoint.
+  - Dashboard and Device speed tests now show warmup state, each completed measurement, partial TPS/latency, progress, and live system memory before the full run finishes.
+  - Clarified that live system memory is not exact model-weight or VRAM usage.
+  - Verified model discovery, persisted selection, real intermediate `1/3` state, final `3/3` state, desktop 1440px, and mobile 390px layouts.
